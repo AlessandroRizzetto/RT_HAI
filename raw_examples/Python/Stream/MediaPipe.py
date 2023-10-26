@@ -12,15 +12,20 @@ holistic = mp_holistic.Holistic(
 mp_drawing = mp.solutions.drawing_utils
 
 # If exists previous data, delete it
-if os.path.exists("landmarks.stream"):
-    os.remove("landmarks.stream")
-    print("landmarks.stream file removed")
+'''if os.path.exists("landmarks.stream~"):
+    os.remove("landmarks.stream~")
+    print("landmarks.stream~ file removed")'''
+
+file = "../raw_examples/Python/Stream/landmarks.stream~"
+
+# Create file
+open(file, "w").close()
 
 # Make Detections
 cap = cv2.VideoCapture(0)
 start_time = None
 
-with open("landmarks.stream", "a+") as f:
+with open(file, "a+") as f:
     with holistic as pose:
         while cap.isOpened():
             ret, frame = cap.read()
