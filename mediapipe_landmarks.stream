@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<stream ssi-v="2">
+    <info ftype="ASCII" sr="50.000000" dim="2" byte="4" type="FLOAT" delim=" " flags="" />
+    <time ms="24777115" local="2016/04/18 16:53:16:444" system="2016/04/18 14:53:16:444"/>
+    <chunk from="0.000000" to="1.600000" byte="0" num="80"/>
+</stream>
