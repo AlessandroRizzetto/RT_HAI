@@ -1,0 +1,4 @@
+<?xml version="1.0" ?>
+<options>
+    <item name="scale" type="BOOL" num="1" value="true" lock="true" help="scale to interval [-1..1]" />
+</options>

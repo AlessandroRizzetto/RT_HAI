@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+
+<pipeline ssi-v="1">
+
+	<register>
+		<load name="mouse"/>
+		<load name="graphic"/>		
+		<load name="ioput"/>				
+		<load name="control"/>			
+		<load name="signal"/>		
+	</register>
+
+	<sensor create="SocketReader" port="2222" ssr="50.0" sdim="2" sbyte="4" stype="9">      
+		<output channel="socket" pin="ecg"/>
+	</sensor>
+	
+	<consumer create="SignalPainter:plot" title="ECG" size="10.0">
+		<input pin="ecg" frame="0.2s"/>		
+	</consumer>		
+	<object create="Decorator" icon="true" title="Pipeline">
+		<area pos="0,0,400,600">console</area>
+		<area pos="400,0,400,600">plot*</area>
+	</object>
+	
+</pipeline>

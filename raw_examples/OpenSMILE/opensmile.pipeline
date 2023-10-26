@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+
+<pipeline ssi-v="1">
+
+	<register>
+		<load name="graphic" />
+		<load name="audio" depend="ssidialog.dll" />
+		<load name="ioput" />
+		<load name="signal" />
+		<load name="python310" />
+		<load name="opensmile" />
+	</register>
+
+	<!-- # Live input
+
+	`audio:live=true`:
+	> `audio:live:mic=true`: input from a microphone
+	> `audio:live:mic=false`: output of the soundcard (make sure to set the output format of your
+	soundcard to `16 bit` and `48000 Hz`)
+	`audio:live=false`: input from file (`mono` and sampled at `48000 Hz`)
+
+	![](https://raw.githubusercontent.com/hcmlab/vadnet/master/pics/loopback.png)	
+	
+	-->
+	<gate open="$(audio:live)">
+		<gate open="$(audio:live:mic)">
+			<sensor create="Audio" option="options\microphone" sr="48000" scale="true"
+				blockInSamples="512">
+				<output channel="audio" pin="audio" />
+			</sensor>
+		</gate>
+		<gate close="$(audio:live:mic)">
+			<sensor create="AudioLoopBack" option="options\loopback" scale="true">
+				<output channel="audio" pin="audio">
+					<transformer create="Selector" indices="0" />
+				</output>
+			</sensor>
+		</gate>
+	</gate>
+
+	<gate close="$(audio:live)">
+		<sensor create="WavReader:reader" path="data\speech.wav" loop="true">
+			<output channel="audio" pin="audio" size="2.0s" />
+		</sensor>
+	</gate>
+	<!---->
+
+	<!-- # Preprocessing
+	> Pitch: `OSPitchShs` (filter)
+	> Loudness: `OSIntensity` (feature)
+	-->
+	<transformer create="DownSample" keep="3">
+		<input pin="audio" frame="9"/>
+		<output pin="audio-down"/>
+	</transformer>
+	<transformer create="OSPitchShs" fsSec="0.3">
+		<input pin="audio-down" frame="0.3s" />
+		<output pin="audio-pitch" />
+	</transformer>
+	<transformer create="OSIntensity" intensity="0" loudness="1">
+		<input pin="audio-down" frame="0.3s" />
+		<output pin="audio-loudness" />
+	</transformer>
+	<!---->
+
+	<!-- # Playback and Visualization
+	
+	Finally, we play back the audio signal (in case of file input only) and visualize it.	
+	
+	-->
+	<gate close="$(audio:live)">
+		<consumer create="AudioPlayer" option="options\aplayer">
+			<input pin="audio" frame="0.1s" />
+		</consumer>
+	</gate>
+	<consumer create="SignalPainter:plot" title="AUDIO" size="10" type="2">
+		<input pin="audio" frame="0.3s" />
+	</consumer>
+	<consumer create="SignalPainter:plot-ex" title="PITCH" size="10.0">
+		<input pin="audio-pitch" frame="0.3s" />
+	</consumer>
+	<consumer create="SignalPainter:plot-ex" title="LOUDNESS" size="10.0">
+		<input pin="audio-loudness" frame="0.3s" />
+	</consumer>
+	<!---->
+
+	<object create="Decorator" icon="true" title="Pipeline">
+		<area pos="0,0,400,300">plot</area>
+		<area pos="0,300,400,300" nv="1" nh="2">plot-ex*</area>
+	</object>
+
+</pipeline>
