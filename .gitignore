@@ -1,0 +1,3 @@
+/bin/*
+!/bin/7za.exe
+!/bin/wget.exe
