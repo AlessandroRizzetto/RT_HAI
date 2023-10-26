@@ -28,9 +28,7 @@ def initChannel(name, channel, types, opts, vars):
 
 
 def connect(opts, vars):
-    print("Ciao")
     mediapipe_process.start()
-    print("Ciaone")
     vars['mp'] = 0
     vars['pos'] = 0
 

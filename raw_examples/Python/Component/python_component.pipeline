@@ -7,12 +7,12 @@
 		<load name="graphic"/>
 	</register>	
 	
-	<sensor create="PythonSensor" script="ecg" block="0.1">
-		<output channel="ecg" pin="ecg"/>		
+	<sensor create="PythonSensor" script="mediapipe_landmarks" block="0.1">
+		<output channel="mp" pin="mp"/>		
 	</sensor>
 	
-	<consumer create="SignalPainter:plot" title="ECG" size="10.0">
-		<input pin="ecg" frame="0.2s"/>		
+	<consumer create="SignalPainter:plot" title="Mediapipe" size="10.0">
+		<input pin="mp" frame="0.2s"/>		
 	</consumer>		
 	<object create="Decorator" icon="true" title="Pipeline">
 		<area pos="0,0,400,600">console</area>

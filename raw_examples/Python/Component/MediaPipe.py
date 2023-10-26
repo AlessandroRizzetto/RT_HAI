@@ -82,13 +82,6 @@ def run() -> None:
                             landmarks[mp_holistic.PoseLandmark.RIGHT_INDEX.value].y]
 
                 data.append(1-nose[1])
-                # print("nose: ", (1-nose[1]))
-
-                # save data into .stream file
-
-                f.write(str(1-nose[1]) + "\n")
-                f.flush()
-                os.fsync(f.fileno())  # flush the buffer
 
                 # Extract Pose landmarks for AI sulution
                 # pose = results.pose_landmarks.landmark
