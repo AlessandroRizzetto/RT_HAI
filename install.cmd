@@ -19,6 +19,7 @@ set DST=bin\
 %DST%Scripts\pip.exe install numpy
 %DST%Scripts\pip.exe install mediapipe
 %DST%Scripts\pip.exe install numpy
+%DST%Scripts\pip.exe install multiprocess
 %DST%wget.exe %SRC%xmlpipe.exe -O %DST%xmlpipe.exe 
 %DST%wget.exe %SRC%xmlchain.exe -O %DST%xmlchain.exe 
 %DST%wget.exe %SRC%xmltrain.exe -O %DST%xmltrain.exe 
