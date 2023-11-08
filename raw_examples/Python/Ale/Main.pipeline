@@ -6,19 +6,34 @@
 	<register>
 		<load name="python310"/>		
 		<load name="graphic"/>
+		<load name="ioput"/>
 	</register>	
 
-	<sensor create="PythonSensor" script="SSI_Mediapipe" block="0.1">
+	<!-- <sensor create="PythonSensor" script="SSI_Mediapipe" block="0.1">
 		<output channel="mp" pin="mp"/>		
+	</sensor> -->
+
+	<!-- socket receiver 
+	
+	Reads from a socket port and feeds the received signal into the
+	pipeline. Use this component to receive signals from external applications.
+	Make sure to adjust the options to fit the incoming signal.
+	
+	-->
+
+	
+
+	<sensor create="SocketReader" port="2222" ssr="50.0" sdim="2" sbyte="4" stype="9">		
+		<output channel="socket" pin="socket"/>
 	</sensor>
 
-	<consumer create="SignalPainter:plot" title="mp" size="10.0">
-		<input pin="mp" frame="0.2s"/>		
+	<!-- <consumer create="SignalPainter:plot" title="mp" size="10.0">
+		<input pin="socket" frame="0.2s"/>		
 	</consumer>		
 	<object create="Decorator" icon="true" title="Pipeline">
 		<area pos="0,0,400,600">console</area>
 		<area pos="400,0,400,600">plot*</area>
-	</object>
+	</object> -->
 	<!---->	
 
 </pipeline>
