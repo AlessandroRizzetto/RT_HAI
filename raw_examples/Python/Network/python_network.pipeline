@@ -1,25 +1,41 @@
 <?xml version="1.0" ?>
-
 <pipeline ssi-v="1">
-
+	
+	<!-- register dlls -->
 	<register>
+		<load name="ioput"/>
 		<load name="mouse"/>
-		<load name="graphic"/>		
-		<load name="ioput"/>				
-		<load name="control"/>			
-		<load name="signal"/>		
+		<load name="signal"/>
 	</register>
 
-	<sensor create="SocketReader" port="2222" ssr="50.0" sdim="2" sbyte="4" stype="9">      
-		<output channel="socket" pin="ecg"/>
+	<!-- mouse sensor -->
+	<sensor create="Mouse" sr="50.0" mask="1" event="true" address="click@mouse">		
+		<output channel="cursor" pin="cursor"/>
+		<output channel="button" pin="button">
+			<transformer create="Cast" type="9"/>
+		</output>
 	</sensor>
 	
-	<consumer create="SignalPainter:plot" title="ECG" size="10.0">
-		<input pin="ecg" frame="0.2s"/>		
+	<!-- cursor events -->
+	<consumer create="FunctionalsEventSender" names="mean,min,max" address="features@mouse">
+		<input pin="cursor" address="click@mouse"/>
+	</consumer>
+	
+	<!-- xml -->
+	<consumer create="XMLEventSender:monitor" path="receiver" address="ssi@xml" monitor="true">
+		<input pin="cursor;button" frame="5"/>
+		<listen address="@mouse"/>
 	</consumer>		
-	<object create="Decorator" icon="true" title="Pipeline">
-		<area pos="0,0,400,600">console</area>
-		<area pos="400,0,400,600">plot*</area>
+	
+	<!-- sender -->
+	<object create="SocketEventWriter" port="2222" type="0" xml="true">
+		<listen address="ssi@xml"/>
 	</object>
 	
+	<!-- decoration -->
+	<object create="Decorator" icon="true" title="Pipeline">
+		<area pos="0,0,400,600">console</area>		
+		<area pos="400,0,800,600">monitor*</area>
+	</object>
+
 </pipeline>

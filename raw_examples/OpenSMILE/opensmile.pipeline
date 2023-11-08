@@ -39,7 +39,7 @@
 	</gate>
 
 	<gate close="$(audio:live)">
-		<sensor create="WavReader:reader" path="data\speech.wav" loop="true">
+		<sensor create="WavReader:reader" path="..\data\speech.wav" loop="true">
 			<output channel="audio" pin="audio" size="2.0s" />
 		</sensor>
 	</gate>
@@ -53,7 +53,7 @@
 		<input pin="audio" frame="9"/>
 		<output pin="audio-down"/>
 	</transformer>
-	<transformer create="OSPitchShs" fsSec="0.3">
+	<transformer create="OSPitchShs" fsSec="0.3" octaveCorrection="true">
 		<input pin="audio-down" frame="0.3s" />
 		<output pin="audio-pitch" />
 	</transformer>
@@ -76,7 +76,7 @@
 	<consumer create="SignalPainter:plot" title="AUDIO" size="10" type="2">
 		<input pin="audio" frame="0.3s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-ex" title="PITCH" size="10.0">
+	<consumer create="SignalPainter:plot" title="PITCH" size="10.0">
 		<input pin="audio-pitch" frame="0.3s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-ex" title="LOUDNESS" size="10.0">

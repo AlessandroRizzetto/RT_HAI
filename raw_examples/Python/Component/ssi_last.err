@@ -1,2 +1,2 @@
-[__________] # !ERROR! # could not parse pipeline from 'C:\Simone\Scuola\Universita\Magistrale\Secondo anno\Research project\RT_HAI\raw_examples\Python\Component\-S -I -c from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=26788, pipe_handle=3568) --multiprocessing-fork'
+[__________] # !ERROR! # could not parse pipeline from 'C:\Users\Alessandro\Desktop\Research Project\RT_HAI\raw_examples\Python\Component\-S -I -c from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=24700, pipe_handle=3916) --multiprocessing-fork'
 location: ..\..\..\tools\xmlpipe\Main.cpp (296)
