@@ -9,19 +9,25 @@ import time
 import socket
 import socket
 
+HOST = '127.0.0.1'  # The server's hostname or IP address
+PORT = 2222      # The port used by the server
+SYNC = 1111
+MESSAGE = 'SSI:STRT:RUN1\0'
+
 
 def create_socket(host, port):
     # create a socket and send data to the server
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print("Socket created")
-    client_socket.connect((host, port))  # connect to the server
-    print("Connected to server")
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    client_socket.sendto(bytes(MESSAGE, "utf-8"), (HOST, SYNC))
+    print("Socket connected")
+    # client_socket.connect((host, port))  # connect to the server
+    # print("Connected to server")
     return client_socket
 
 
 def send_data(client_socket, data):
     # send data to the server
-    client_socket.sendall(data.encode())
+    client_socket.sendto(bytes(data + "\0", "utf-8"), (HOST, PORT))
     # receive data from the server
     # answer = client_socket.recv(1024)
     # return answer.decode()
@@ -172,7 +178,7 @@ def mediaPipe(client_socket):
                 print(dataTable[f'{"NOSE"}_x_v'][-1])
 
                 # send data to the server
-                send_data(client_socket, str(dataTable[f'{"NOSE"}_x'][-1]))
+                send_data(client_socket, str(dataTable[f'{"NOSE"}_y'][-1]))
 
                 # Pandas Version
                 # new_data = {}
@@ -244,7 +250,7 @@ def mediaPipe(client_socket):
 
     cap.release()
     cv2.destroyAllWindows()
-    client_socket.close()
+    # client_socket.close()
 
 
 if __name__ == "__main__":

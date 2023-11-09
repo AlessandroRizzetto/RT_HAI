@@ -23,7 +23,7 @@
 	Make sure to adjust the options to fit the incoming signal.
 	
 	-->
-	<sensor create="SocketReader" port="2222" ssr="50.0" sdim="2" sbyte="4" stype="9">		
+	<sensor create="SocketReader" port="2222" ssr="50.0" sdim="2" sbyte="4" stype="9" format="1">		
 		<output channel="socket" pin="cursor"/>
 	</sensor>
 	

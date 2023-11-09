@@ -25,7 +25,7 @@
 	Streams cursor signal to a socket.
 	
 	-->
-	<consumer create="SocketWriter" port="2222" host="127.0.0.1">
+	<consumer create="SocketWriter" port="2222" host="127.0.0.1" format="1">
 		<input pin="cursor" frame="0.2s" />
 	</consumer>
 	
