@@ -25,7 +25,7 @@
 	<gate open="$(audio:live)">
 		<gate open="$(audio:live:mic)">
 			<sensor create="Audio" option="options\microphone" sr="48000" scale="true"
-				blockInSamples="512">
+				blockInSamples="416">
 				<output channel="audio" pin="audio" />
 			</sensor>
 		</gate>
@@ -39,7 +39,7 @@
 	</gate>
 
 	<gate close="$(audio:live)">
-		<sensor create="WavReader:reader" path="data\speech.wav" loop="true">
+		<sensor create="WavReader:reader" path="..\data\speech.wav" loop="true">
 			<output channel="audio" pin="audio" size="2.0s" />
 		</sensor>
 	</gate>
@@ -49,14 +49,20 @@
 	> Pitch: `OSPitchShs` (filter)
 	> Loudness: `OSIntensity` (feature)
 	-->
-	<transformer create="DownSample" keep="3">
+	<transformer create="DownSample" keep="4">
 		<input pin="audio" frame="9"/>
 		<output pin="audio-down"/>
 	</transformer>
-	<transformer create="OSPitchShs" fsSec="0.3">
-		<input pin="audio-down" frame="0.3s" />
-		<output pin="audio-pitch" />
+	<transformer create="OSPitchChain" option="pitch">
+		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
+		<output pin="audio-pitch"/>
 	</transformer>
+	<gate open="$(audio:mffc)">
+		<transformer create="OSMfccChain" option="mfcc">
+			<input pin="audio-down" frame="0.01s" delta="0.02s"/>
+			<output pin="audio-mfcc"/>
+		</transformer>
+	</gate>
 	<transformer create="OSIntensity" intensity="0" loudness="1">
 		<input pin="audio-down" frame="0.3s" />
 		<output pin="audio-loudness" />
@@ -76,17 +82,40 @@
 	<consumer create="SignalPainter:plot" title="AUDIO" size="10" type="2">
 		<input pin="audio" frame="0.3s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-ex" title="PITCH" size="10.0">
-		<input pin="audio-pitch" frame="0.3s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-ex" title="LOUDNESS" size="10.0">
+	<consumer create="SignalPainter:plot-data" title="LOUDNESS" size="10.0" type="5" colormap="3">
 		<input pin="audio-loudness" frame="0.3s" />
 	</consumer>
+	<consumer create="SignalPainter:plot-data" size="10" title="pitch" type="5">
+		<input pin="audio-pitch" frame="0.02s" />
+	</consumer>
+	<gate open="$(audio:mffc)">
+		<consumer create="SignalPainter:plot-mffc" size="10" title="MFCC" type="1">
+			<input pin="audio-mfcc" frame="0.03s" />
+		</consumer>
+	</gate>
+	<!--<consumer create="PythonConsumer:plot-data" script="audio_visualization" optsstr="title=Loudness">
+		<input pin="audio-loudness" frame="0.2s"/>
+	</consumer>
+	<consumer create="PythonConsumer:plot-data" script="audio_visualization" optsstr="title=Loudness">
+		<input pin="audio-loudness" frame="0.2s"/>
+	</consumer>-->
+	
+	<!-- decoration -->
+	<gate close="$(audio:mffc)">
+		<object create="Decorator" icon="true" title="Pipeline">
+			<area pos="0,0,400,600">console</area>
+			<area pos="400,0,400,300">plot</area>
+			<area pos="400,400,400,300" nv="1" nh="2">plot-data*</area>
+		</object>
+	</gate>
+	<gate open="$(audio:mffc)">
+		<object create="Decorator" icon="true" title="Pipeline">
+			<area pos="0,0,400,600">console</area>
+			<area pos="400,0,400,300">plot</area>
+			<area pos="400,400,400,300" nv="1" nh="2">plot-data*</area>
+			<area pos="800,400,400,300">plot-mffc</area>
+		</object>
+	</gate>
 	<!---->
-
-	<object create="Decorator" icon="true" title="Pipeline">
-		<area pos="0,0,400,300">plot</area>
-		<area pos="0,300,400,300" nv="1" nh="2">plot-ex*</area>
-	</object>
 
 </pipeline>
