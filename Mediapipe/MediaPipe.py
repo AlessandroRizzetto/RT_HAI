@@ -8,24 +8,48 @@ from scipy.signal import savgol_filter
 import time
 import socket
 import socket
+import sys
+import serial
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 2222      # The port used by the server
 SYNC = 1111
-MESSAGE = 'SSI:STRT:RUN1\0'
+NETWORK_MESSAGE = 'SSI:STRT:RUN1\0'
+ser = serial.Serial('COM4', 9600, timeout=1)
+ser.flush()
+ser.reset_input_buffer()
 
 
 def create_socket(host, port):
     # create a socket and send data to the server
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    client_socket.sendto(bytes(MESSAGE, "utf-8"), (HOST, SYNC))
+    client_socket.sendto(bytes(NETWORK_MESSAGE, "utf-8"), (HOST, SYNC))
     print("Socket connected")
     # client_socket.connect((host, port))  # connect to the server
     # print("Connected to server")
     return client_socket
 
 
-def send_data(client_socket, data):
+def serial_communication(message, LAST_MESSAGE):
+    # --- ARDUINO-PC SERIAL COMMUNICATION SECTION --
+    # COM4 is the port number of the Arduino
+
+    # print(LAST_MESSAGE, message)
+    if message == 1 and LAST_MESSAGE == False:
+        ser.write("VIBRATION_ON\n".encode('utf-8'))
+        print("Vibration has been turned ON!")
+
+        LAST_MESSAGE = True
+    elif message == 0 and LAST_MESSAGE == True:
+        ser.write("VIBRATION_OFF\n".encode('utf-8'))
+
+        print("Vibration has been turned OFF!")
+        LAST_MESSAGE = False
+
+    return LAST_MESSAGE
+
+
+def send_data_network(client_socket, data):
     # send data to the server
     client_socket.sendto(bytes(data + "\0", "utf-8"), (HOST, PORT))
     # receive data from the server
@@ -60,6 +84,7 @@ def mediaPipe(client_socket):
     # Savgol filter parameters
     window_length = 17
     polyorder = 2
+    LAST_MESSAGE = False
 
     landmarks_name = ['NOSE', 'LEFT_SHOULDER', 'RIGHT_SHOULDER', 'LEFT_ELBOW', 'RIGHT_ELBOW', 'LEFT_WRIST', 'RIGHT_WRIST',
                       'LEFT_PINKY', 'RIGHT_PINKY', 'LEFT_INDEX', 'RIGHT_INDEX', 'LEFT_THUMB', 'RIGHT_THUMB', 'LEFT_HIP',
@@ -175,10 +200,17 @@ def mediaPipe(client_socket):
                     # print(dataTable[f'kinetic_Energy_{name}'][-1])
                     # print(dataTable[f'{name}_x'])
                     # print(name)
-                print(dataTable[f'{"NOSE"}_x_v'][-1])
+                # print(dataTable[f'{"NOSE"}_y'][-1])
 
+                nose_test = 1 - dataTable[f'{"NOSE"}_y'][-1]
                 # send data to the server
-                send_data(client_socket, str(dataTable[f'{"NOSE"}_y'][-1]))
+                send_data_network(client_socket, str(
+                    nose_test) + "\n")
+
+                if dataTable[f'{"NOSE"}_y'][-1] < 0.5:
+                    LAST_MESSAGE = serial_communication(1, LAST_MESSAGE)
+                else:
+                    LAST_MESSAGE = serial_communication(0, LAST_MESSAGE)
 
                 # Pandas Version
                 # new_data = {}
@@ -263,3 +295,4 @@ if __name__ == "__main__":
 
     # start mediapipe
     mediaPipe(client_socket)
+    # serial_communication(1)

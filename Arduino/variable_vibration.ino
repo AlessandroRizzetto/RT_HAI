@@ -18,10 +18,15 @@ void loop() {
     String message = Serial.readStringUntil('\n');
     
     // Compare the received message
-    if (message.equals(VIBRATION_ON_MESSAGE)) {
-      // Turn on the vibration motor
+    if (message.equals("VIBRATION_ON_LOW")) {
+      // Turn on the vibration motor at low level
+      digitalWrite(pinVibrationMotor, 100);
+      Serial.println("Vibration motor turned on at low level");
+      delay(1000); // Wait for 1 second to avoid excessive vibration
+    } else if (message.equals("VIBRATION_ON_HIGH")) {
+      // Turn on the vibration motor at high level
       digitalWrite(pinVibrationMotor, HIGH);
-      Serial.println("Vibration motor turned on");
+      Serial.println("Vibration motor turned on at high level");
       delay(1000); // Wait for 1 second to avoid excessive vibration
     } else if (message.equals(VIBRATION_OFF_MESSAGE)) {
       // Turn off the vibration motor
