@@ -11,14 +11,10 @@ import socket
 import sys
 import serial
 
-COORDINATES = ['x', 'y', 'z']
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 2222      # The port used by the server
 SYNC = 1111
 NETWORK_MESSAGE = 'SSI:STRT:RUN1\0'
-start_time = None
-elapsed_time = None
-user_body = {}
 # ser = serial.Serial('COM4', 9600, timeout=1)
 # ser.flush()
 # ser.reset_input_buffer()
@@ -61,63 +57,14 @@ def send_data_network(client_socket, data):
     # return answer.decode()
 
 
-def normalize(value): # to adapt when we will have the real values from experiment
+def normalize(value):
     # normalize the data as a value from 0 to 1
     max_value = 1
     min_value = 0
     return (value - min_value) / (max_value - min_value)
 
-def nose_test(client_socket, dataTable, LAST_MESSAGE):
-    # test 
-    nose_test = 1 - dataTable[f'{"NOSE"}_y'][-1]
-    # send data to the server
-    send_data_network(client_socket, str(
-        nose_test) + "\n")
-
-    if dataTable[f'{"NOSE"}_y'][-1] < 0.5:
-        LAST_MESSAGE = serial_communication(1, LAST_MESSAGE)
-    else:
-        LAST_MESSAGE = serial_communication(0, LAST_MESSAGE)
-
-def body_settings(client_socket, dataTable, LAST_MESSAGE):
-    
-    user_body = dataTable.copy()
-    # set values for the body as the mean of the values adding appending the mean to the list
-    for name in user_body:
-        user_body[name][-1] = np.mean(user_body[name])
-        
-     
-   
-    standard_bounding_triangle = bounding_triangle(client_socket, user_body, LAST_MESSAGE)
-    print("standard_bounding_triangle: ", standard_bounding_triangle)
-    print("body_settings completed")
-    return user_body, standard_bounding_triangle
-
-def bounding_triangle(client_socket, dataTable, LAST_MESSAGE):
-    # calculate the bounding triangle thanks to the coordinates of the landmarks
-    # calculate the area of the triangle
-    torso_points = []
-    for landmark in ["LEFT_SHOULDER", "RIGHT_SHOULDER", "LEFT_HIP", "RIGHT_HIP"]:
-        point = [dataTable[f'{landmark}_{coord}'][-1] for coord in COORDINATES]
-        torso_points.append(point)
-    # calculate the point beetwen the hips as the mean of the coordinates of the two hips and concatenate it to the list
-    point = [(torso_points[2][i] + torso_points[3][i])/2 for i in range(3)]
-    torso_points.append(point)
-    torso_points = np.array(torso_points)
-    # calculate tridimensional area of the triangle between the shoulders and the point between the hips
-    triangle_area = 1-(np.linalg.norm(np.cross(torso_points[0]-torso_points[1], torso_points[0]-torso_points[3]))/2)
-    print("bounding_triangle area: ", triangle_area)
-    return triangle_area
-
-def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle):
-    bounding_area_threshold = 0.2
-    if triangle_area < standard_bounding_triangle - bounding_area_threshold:
-        print("Crouch detected")
-    
-    
 
 def mediaPipe(client_socket):
-    global configuration
     # Setup MediaPipe Holistic instance
     mp_holistic = mp.solutions.holistic
     holistic = mp_holistic.Holistic(
@@ -134,7 +81,6 @@ def mediaPipe(client_socket):
     # Make Detections
     cap = cv2.VideoCapture(0)
     start_time = None
-    configuration_isdone = False
     # Savgol filter parameters
     window_length = 17
     polyorder = 2
@@ -166,10 +112,8 @@ def mediaPipe(client_socket):
     for name in landmarks_name:
         dataTable[f'{name}_x'] = []
         dataTable[f'{name}_y'] = []
-        dataTable[f'{name}_z'] = []
         dataTable[f'{name}_x_v'] = []
         dataTable[f'{name}_y_v'] = []
-        dataTable[f'{name}_z_v'] = []
         dataTable[f'kinetic_Energy_{name}'] = []
         # initialize the first velocities at 0
         # dataTable[f'{name}_x_v'].append(0)
@@ -198,9 +142,7 @@ def mediaPipe(client_socket):
                 # Extract elbow landmarks
                 # try:
                 landmarks = results.pose_landmarks.landmark
-                
-               
-                
+
                 # landmarks_coords = []
 
                 for name in landmarks_name:
@@ -227,40 +169,22 @@ def mediaPipe(client_socket):
                         landmarks[mp_holistic.PoseLandmark[name].value].x)
                     dataTable[f'{name}_y'].append(
                         landmarks[mp_holistic.PoseLandmark[name].value].y)
-                    dataTable[f'{name}_z'].append(
-                        landmarks[mp_holistic.PoseLandmark[name].value].z)
                     # Structure version
                     # calculate the velocities as the distance between the current and the previous frame
                     if len(dataTable[f'{name}_x']) > 17:
                         # apply the savgol filter to the last 17 values
-                        # dataTable[f'{name}_x'][-17:] = savgol_filter(
-                        #     dataTable[f'{name}_x'][-17:], window_length, polyorder)
-                        # dataTable[f'{name}_y'][-17:] = savgol_filter(
-                        #     dataTable[f'{name}_y'][-17:], window_length, polyorder)
-                        # dataTable[f'{name}_z'][-17:] = savgol_filter(
-                        #     dataTable[f'{name}_z'][-17:], window_length, polyorder)
-                        # # calculate the velocities as the distance between the current and the previous frame
-                        # dataTable[f'{name}_x_v'].append(
-                        #     abs(dataTable[f'{name}_x'][-1] - dataTable[f'{name}_x'][-17]))
-                        # dataTable[f'{name}_y_v'].append(
-                        #     abs(dataTable[f'{name}_y'][-1] - dataTable[f'{name}_y'][-17]))
-                        # dataTable[f'{name}_z_v'].append(
-                        #     abs(dataTable[f'{name}_z'][-1] - dataTable[f'{name}_z'][-17]))
-                        
-                        # stessa cosa di sopra ma scritta meglio
-                        for coord in COORDINATES:
-                            data_col = dataTable[f'{name}_{coord}']
-                            data_col[-17:] = savgol_filter(data_col[-17:], window_length, polyorder)
-                            
-                            vel_col = f'{name}_{coord}_v'
-                            vel_value = abs(data_col[-1] - data_col[-17])
-                            dataTable[vel_col].append(vel_value)
-
+                        dataTable[f'{name}_x'][-17:] = savgol_filter(
+                            dataTable[f'{name}_x'][-17:], window_length, polyorder)
+                        dataTable[f'{name}_y'][-17:] = savgol_filter(
+                            dataTable[f'{name}_y'][-17:], window_length, polyorder)
+                        # calculate the velocities as the distance between the current and the previous frame
+                        dataTable[f'{name}_x_v'].append(
+                            abs(dataTable[f'{name}_x'][-1] - dataTable[f'{name}_x'][-17]))
+                        dataTable[f'{name}_y_v'].append(
+                            abs(dataTable[f'{name}_y'][-1] - dataTable[f'{name}_y'][-17]))
                         # calculate the kinetic energy as half of the sum of the square of the velocities, normalized from 0 to 1
-                        # dataTable[f'kinetic_Energy_{name}'].append(
-                        #     normalize(dataTable[f'{name}_x_v'][-1]**2 + dataTable[f'{name}_y_v'][-1]**2)/2)
                         dataTable[f'kinetic_Energy_{name}'].append(
-                            normalize(((dataTable[f'{name}_x_v'][-1] + dataTable[f'{name}_y_v'][-1] + dataTable[f'{name}_z_v'][-1])**2)/2))
+                            normalize(dataTable[f'{name}_x_v'][-1]**2 + dataTable[f'{name}_y_v'][-1]**2)/2)
 
                     else:
                         dataTable[f'{name}_x_v'].append(0)
@@ -276,8 +200,18 @@ def mediaPipe(client_socket):
                     # print(dataTable[f'kinetic_Energy_{name}'][-1])
                     # print(dataTable[f'{name}_x'])
                     # print(name)
-                
-                
+                # print(dataTable[f'{"NOSE"}_y'][-1])
+
+                nose_test = 1 - dataTable[f'{"NOSE"}_y'][-1]
+                # send data to the server
+                send_data_network(client_socket, str(
+                    nose_test) + "\n")
+
+                if dataTable[f'{"NOSE"}_y'][-1] < 0.5:
+                    LAST_MESSAGE = serial_communication(1, LAST_MESSAGE)
+                else:
+                    LAST_MESSAGE = serial_communication(0, LAST_MESSAGE)
+
                 # Pandas Version
                 # new_data = {}
                 # for idx, name in enumerate(landmarks_name):
@@ -307,25 +241,6 @@ def mediaPipe(client_socket):
                 # f.write(str(1-nose[1]) + "\n")
                 # f.flush()
                 # os.fsync(f.fileno())  # flush the buffer
-                
-                ##############################################################################
-                # configuration of the body of the user
-                if start_time == None:
-                    start_time = time.time()
-                elapsed_time = time.time() - start_time
-                if elapsed_time > 5 and configuration_isdone == False:
-                    user_body, standard_bounding_triangle = body_settings(client_socket, dataTable, LAST_MESSAGE)
-                    configuration_isdone = True
-                
-                ##############################################################################
-                # ESECUZIONE EFFETTIVA DELLE FUNZIONI
-                if configuration_isdone == True:
-                    #test nose position threshold
-                    #nose_test(client_socket, dataTable, LAST_MESSAGE)
-                    triangle_area = bounding_triangle(client_socket, dataTable, LAST_MESSAGE)
-                    #print(dataTable[f'NOSE_x'][-1], dataTable[f'NOSE_y'][-1], dataTable[f'NOSE_z'][-1])
-                    crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle)
-                ##################################################################################
 
                 # Render landmarks
                 # 1. Draw face landmarks
@@ -376,8 +291,8 @@ if __name__ == "__main__":
     port = 9000
 
     # create a socket
-    #client_socket = create_socket(host, port)
-    client_socket = 1
+    client_socket = create_socket(host, port)
+
     # start mediapipe
     mediaPipe(client_socket)
-  
+    # serial_communication(1)
