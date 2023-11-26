@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
+from numpy.linalg import norm
 import time
 import socket
 import socket
@@ -80,14 +81,12 @@ def nose_test(client_socket, dataTable, LAST_MESSAGE):
         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE)
 
 def body_settings(client_socket, dataTable, LAST_MESSAGE):
-    
     user_body = dataTable.copy()
     # set values for the body as the mean of the values adding appending the mean to the list
     for name in user_body:
         user_body[name][-1] = np.mean(user_body[name])
         
-     
-   
+    # calculate the standard bounding triangle (configuration of the body)
     standard_bounding_triangle = bounding_triangle(client_socket, user_body, LAST_MESSAGE)
     print("standard_bounding_triangle: ", standard_bounding_triangle)
     print("body_settings completed")
@@ -106,7 +105,7 @@ def bounding_triangle(client_socket, dataTable, LAST_MESSAGE):
     torso_points = np.array(torso_points)
     # calculate tridimensional area of the triangle between the shoulders and the point between the hips
     triangle_area = 1-(np.linalg.norm(np.cross(torso_points[0]-torso_points[1], torso_points[0]-torso_points[3]))/2)
-    print("bounding_triangle area: ", triangle_area)
+    #print("bounding_triangle area: ", triangle_area)
     return triangle_area
 
 def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle):
@@ -114,8 +113,28 @@ def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle
     if triangle_area < standard_bounding_triangle - bounding_area_threshold:
         print("Crouch detected")
     
+def compute_features(dataTable, name, COORDINATES, window_length, polyorder):
+    for coord in COORDINATES:
+        data_col = dataTable[f'{name}_{coord}']
+        data_col[-17:] = savgol_filter(data_col[-17:], window_length, polyorder)
+        vel_col = f'{name}_{coord}_v'
+        vel_value = abs(data_col[-1] - data_col[-17])
+        dataTable[vel_col].append(vel_value)
     
-
+    # compute acceleration as the derivative of the velocity
+    acc_col = f'{name}_acceleration'
+    acc_values = np.array([savgol_filter(dataTable[f'{name}_{coord}_v'][-17:], window_length, polyorder) for coord in COORDINATES])
+    acc_values = np.diff(acc_values, 2, axis=0)
+    acc_magnitude = norm(acc_values)
+    acc_magnitude = round(acc_magnitude, 5)
+    acc_magnitude = normalize(acc_magnitude)
+    dataTable[acc_col].append(acc_magnitude)
+    
+    # compute kinetic energy as the square of the velocity
+    vel_sum = sum([dataTable[f'{name}_{coord}_v'][-1] for coord in COORDINATES])
+    dataTable[f'kinetic_Energy_{name}'].append(normalize((vel_sum**2)/2))
+    
+ 
 def mediaPipe(client_socket):
     global configuration
     # Setup MediaPipe Holistic instance
@@ -146,21 +165,8 @@ def mediaPipe(client_socket):
                       'LEFT_FOOT_INDEX', 'RIGHT_FOOT_INDEX']
     # landmarks_name = ['NOSE']
 
-    # Initialize the DataFrame
-    data = pd.DataFrame(columns=[f'{landmark}_x' for landmark in landmarks_name] +
-                        [f'{landmark}_y' for landmark in landmarks_name] +
-                        [f'{landmark}_x_v' for landmark in landmarks_name] +
-                        [f'{landmark}_y_v' for landmark in landmarks_name] +
-                        [f'kinetic_Energy_{landmark}' for landmark in landmarks_name])
-    # Initialize at 0 the first velocities
-    data.loc[0, [f'{landmark}_x_v' for landmark in landmarks_name]] = 0
-    data.loc[0, [f'{landmark}_y_v' for landmark in landmarks_name]] = 0
-    data.loc[0, [
-        f'kinetic_Energy_{landmark}' for landmark in landmarks_name]] = 0
-    data.loc[0, [f'{landmark}_x' for landmark in landmarks_name]] = 0
-    data.loc[0, [f'{landmark}_y' for landmark in landmarks_name]] = 0
-    # print(data)
-
+    
+    # create a dictionary with the landmarks as keys
     dataTable = {}
     # create a table with the landmarks as columns
     for name in landmarks_name:
@@ -171,12 +177,7 @@ def mediaPipe(client_socket):
         dataTable[f'{name}_y_v'] = []
         dataTable[f'{name}_z_v'] = []
         dataTable[f'kinetic_Energy_{name}'] = []
-        # initialize the first velocities at 0
-        # dataTable[f'{name}_x_v'].append(0)
-        # dataTable[f'{name}_y_v'].append(0)
-        # dataTable[f'kinetic_Energy_{name}'].append(0)
-        # dataTable[f'{name}_x'].append(0)
-        # dataTable[f'{name}_y'].append(0)
+        dataTable[f'{name}_acceleration'] = []
 
     with open("landmarks.stream~", "a+") as f:
         with holistic as pose:
@@ -195,112 +196,46 @@ def mediaPipe(client_socket):
                 image.flags.writeable = True
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-                # Extract elbow landmarks
-                # try:
+                # Pose Detections
                 landmarks = results.pose_landmarks.landmark
                 
-               
-                
-                # landmarks_coords = []
 
                 for name in landmarks_name:
                     # append the coordinates of the landmark to the list
-                    # landmarks_coords.append([landmarks[mp_holistic.PoseLandmark[name].value].x,
-                    #                         landmarks[mp_holistic.PoseLandmark[name].value].y])
-                    # data[f'{name}_x'] = landmarks[mp_holistic.PoseLandmark[name].value].x
-                    # data[f'{name}_y'] = landmarks[mp_holistic.PoseLandmark[name].value].y
-                    # data[f'{name}_x_v'] = 0
-                    # data[f'{name}_y_v'] = 0
-                    # data[f'kinetic_Energy_{name}'] = 0
-                    # calculate the velocities as the distance between the current and the previous frame
-                    # if len(data) > 1:
-                    #     data.at[data.index[-1], f'{name}_x_v'] = abs(
-                    #         data.at[data.index[-1], f'{name}_x'] - data.at[data.index[-2], f'{name}_x'])
-                    #     data.at[data.index[-1], f'{name}_y_v'] = abs(
-                    #         data.at[data.index[-1], f'{name}_y'] - data.at[data.index[-2], f'{name}_y'])
-                    # else:
-                    #     data.at[data.index[-1], f'{name}_x_v'] = 0
-                    #     data.at[data.index[-1], f'{name}_y_v'] = 0
-                    # print(data)
-
                     dataTable[f'{name}_x'].append(
                         landmarks[mp_holistic.PoseLandmark[name].value].x)
                     dataTable[f'{name}_y'].append(
                         landmarks[mp_holistic.PoseLandmark[name].value].y)
                     dataTable[f'{name}_z'].append(
                         landmarks[mp_holistic.PoseLandmark[name].value].z)
-                    # Structure version
+                    
                     # calculate the velocities as the distance between the current and the previous frame
-                    if len(dataTable[f'{name}_x']) > 17:
-                        # apply the savgol filter to the last 17 values
-                        # dataTable[f'{name}_x'][-17:] = savgol_filter(
-                        #     dataTable[f'{name}_x'][-17:], window_length, polyorder)
-                        # dataTable[f'{name}_y'][-17:] = savgol_filter(
-                        #     dataTable[f'{name}_y'][-17:], window_length, polyorder)
-                        # dataTable[f'{name}_z'][-17:] = savgol_filter(
-                        #     dataTable[f'{name}_z'][-17:], window_length, polyorder)
-                        # # calculate the velocities as the distance between the current and the previous frame
-                        # dataTable[f'{name}_x_v'].append(
-                        #     abs(dataTable[f'{name}_x'][-1] - dataTable[f'{name}_x'][-17]))
-                        # dataTable[f'{name}_y_v'].append(
-                        #     abs(dataTable[f'{name}_y'][-1] - dataTable[f'{name}_y'][-17]))
-                        # dataTable[f'{name}_z_v'].append(
-                        #     abs(dataTable[f'{name}_z'][-1] - dataTable[f'{name}_z'][-17]))
+                    if len(dataTable[f'{name}_x']) > 17:                        
                         
-                        # stessa cosa di sopra ma scritta meglio
-                        for coord in COORDINATES:
-                            data_col = dataTable[f'{name}_{coord}']
-                            data_col[-17:] = savgol_filter(data_col[-17:], window_length, polyorder)
-                            
-                            vel_col = f'{name}_{coord}_v'
-                            vel_value = abs(data_col[-1] - data_col[-17])
-                            dataTable[vel_col].append(vel_value)
-
-                        # calculate the kinetic energy as half of the sum of the square of the velocities, normalized from 0 to 1
-                        # dataTable[f'kinetic_Energy_{name}'].append(
-                        #     normalize(dataTable[f'{name}_x_v'][-1]**2 + dataTable[f'{name}_y_v'][-1]**2)/2)
-                        dataTable[f'kinetic_Energy_{name}'].append(
-                            normalize(((dataTable[f'{name}_x_v'][-1] + dataTable[f'{name}_y_v'][-1] + dataTable[f'{name}_z_v'][-1])**2)/2))
+                        compute_features(dataTable, name, COORDINATES, window_length, polyorder)
 
                     else:
                         dataTable[f'{name}_x_v'].append(0)
                         dataTable[f'{name}_y_v'].append(0)
+                        dataTable[f'{name}_z_v'].append(0)
                         dataTable[f'kinetic_Energy_{name}'].append(0)
+                        dataTable[f'{name}_acceleration'].append(0)
                     if len(dataTable[f'{name}_x']) > 17:
                         # remove the first element of the list (the oldest one) to keep the list with the same length
                         dataTable[f'{name}_x'].pop(0)
                         dataTable[f'{name}_y'].pop(0)
+                        dataTable[f'{name}_z'].pop(0)
                         dataTable[f'{name}_x_v'].pop(0)
                         dataTable[f'{name}_y_v'].pop(0)
+                        dataTable[f'{name}_z_v'].pop(0)
                         dataTable[f'kinetic_Energy_{name}'].pop(0)
+                        dataTable[f'{name}_acceleration'].pop(0)
                     # print(dataTable[f'kinetic_Energy_{name}'][-1])
                     # print(dataTable[f'{name}_x'])
                     # print(name)
                 
                 
-                # Pandas Version
-                # new_data = {}
-                # for idx, name in enumerate(landmarks_name):
-                #     # idx is the index of the landmark in the list
-                #     new_data[f'{name}_x'] = landmarks_coords[idx][0]
-                #     new_data[f'{name}_y'] = landmarks_coords[idx][1]
-
-                # # add new data to the dataframe as a new row
-                # data = data._append(new_data, ignore_index=True)
-
-                # if len(data) > 17:
-                #     for idx, name in enumerate(landmarks_name):
-                #         data.at[data.index[-1], f'{name}_x_v'] = abs(
-                #             data.at[data.index[-1], f'{name}_x'] - data.at[data.index[-17], f'{name}_x'])
-                #         data.at[data.index[-1], f'{name}_y_v'] = abs(
-                #             data.at[data.index[-1], f'{name}_y'] - data.at[data.index[-17], f'{name}_y'])
-                #         data.at[data.index[-1], f'kinetic_Energy_{name}'] = data.at[data.index[-1],
-                #                                                                     f'{name}_x_v']**2 + data.at[data.index[-1], f'{name}_y_v']**2
-                # if len(data) > 17:
-                #     # remove the first element of the list (the oldest one) to keep the list with the same length
-                #     data = data.drop(data.index[0])
-
-                # # print(data)
+                # # save data into .csv file
                 # data.to_csv('data.csv', index=False)
 
                 # # save data into .stream file
@@ -322,6 +257,7 @@ def mediaPipe(client_socket):
                 if configuration_isdone == True:
                     #test nose position threshold
                     #nose_test(client_socket, dataTable, LAST_MESSAGE)
+                    print(dataTable[f'NOSE_acceleration'][-1])
                     triangle_area = bounding_triangle(client_socket, dataTable, LAST_MESSAGE)
                     #print(dataTable[f'NOSE_x'][-1], dataTable[f'NOSE_y'][-1], dataTable[f'NOSE_z'][-1])
                     crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle)
