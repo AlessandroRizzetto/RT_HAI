@@ -119,11 +119,6 @@
 	<consumer create="SignalPainter:plot-data" size="10" title="PITCH" type="5">
 		<input pin="audio-pitch" frame="0.02s" />
 	</consumer>
-	<!--<consumer create="SignalPainter:plot-data" title="JITTER AND SHIMMER" type="5">
-		<input pin="praat_vr" address="vr@praat">		
-			<transformer create="Selector" indices="13,18" />
-		</input>
-	</consumer>-->
 	<consumer create="SignalPainter:plot-data" title="JITTER" type="5">
 		<input pin="praat_vr" address="vr@praat">		
 			<transformer create="Selector" indices="13" />
