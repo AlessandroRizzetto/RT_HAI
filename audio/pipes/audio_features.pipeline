@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+
+<pipeline ssi-v="1">
+
+	<register>
+		<load name="graphic" />
+		<load name="audio" depend="ssidialog.dll" />
+		<load name="ioput" />
+		<load name="signal" />
+		<load name="python310" />
+		<load name="opensmile" />
+		<load name="praat"/>
+	</register>
+
+	<!-- # Live input
+
+	`audio:live=true`:
+	> `audio:live:mic=true`: input from a microphone
+	> `audio:live:mic=false`: output of the soundcard (make sure to set the output format of your
+	soundcard to `16 bit` and `48000 Hz`)
+	`audio:live=false`: input from file (`mono` and sampled at `48000 Hz`)
+
+	![](https://raw.githubusercontent.com/hcmlab/vadnet/master/pics/loopback.png)	
+	
+	-->
+	<gate open="$(audio:live)">
+		<gate open="$(audio:live:mic)">
+			<sensor create="Audio" option="..\options\microphone" sr="48000" scale="true"
+				blockInSamples="416">
+				<output channel="audio" pin="audio" />
+			</sensor>
+		</gate>
+		<gate close="$(audio:live:mic)">
+			<sensor create="AudioLoopBack" option="..\options\loopback" scale="true">
+				<output channel="audio" pin="audio">
+					<transformer create="Selector" indices="0" />
+				</output>
+			</sensor>
+		</gate>
+	</gate>
+
+	<gate close="$(audio:live)">
+		<sensor create="WavReader:reader" path="..\data\speech.wav" loop="true">
+			<output channel="audio" pin="audio" size="2.0s" />
+		</sensor>
+	</gate>
+	<!---->
+
+	<!-- # Preprocessing
+	> Pitch: `OSPitchShs` (filter)
+	> Loudness: `OSIntensity` (feature)
+	-->
+	<transformer create="DownSample" keep="4">
+		<input pin="audio" frame="9"/>
+		<output pin="audio-down"/>
+	</transformer>
+	<transformer create="OSPitchChain" option="..\options\pitch">
+		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
+		<output pin="audio-pitch"/>
+	</transformer>
+	<transformer create="OSEnergy">
+		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
+		<output pin="audio-energy"/>
+	</transformer>
+	<transformer create="OSLpc" saveLPCoeff="false" lsp="true">
+		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
+		<output pin="audio-lsp"/>
+	</transformer>
+	<gate open="$(audio:mffc)">
+		<transformer create="OSMfccChain" option="..\0options\mfcc">
+			<input pin="audio-down" frame="0.01s" delta="0.02s"/>
+			<output pin="audio-mfcc"/>
+		</transformer>
+	</gate>
+	<transformer create="OSIntensity" intensity="0" loudness="1">
+		<input pin="audio-down" frame="0.3s" />
+		<output pin="audio-loudness" />
+	</transformer>
+	<!-- 
+		0) duration
+		1) pitch_median 2) pitch_mean 3) pitch_std_dev 4) pitch_min 5) pitch_max
+		6) pulses_number 7) pulses_period_number 8) pulses_mean_period 9) pulses_std_dev_period
+		10) voicing_fraction_unvoiced 11) voicing_voice_breaks 12) voicing_degree_voice_breaks
+		13) jitter_local 14) jitter_local_abs 15) jitter_rap 16) jitter_ppq5 17) jitter_ddp
+		18) shimmer_local 19) shimmer_local_dB 20) shimmer_apq3 21) shimmer_apq5 22) shimmer_apq11 23) shimmer_dda
+		24) harmonicity_autocorr 25) harmonicity_noise_to_harmonics_ratio 26) harmonicity_harmonics_to_noise_ratio:
+	-->
+	<transformer create="PraatVoiceReportT" option="..\options\audio_features" script="..\scripts\voicereport.praat" tmpwav="..\data\tmp\voicereport_t.wav" exe="..\..\bin\praatcon.exe">
+		<input pin="audio" frame="1.0s"/>
+		<output pin="praat_vr"/>
+	</transformer>
+	<consumer create="PraatVoiceReport" script="..\scripts\voicereport.praat" tmpwav="..\data\tmp\voicereport.wav" exe="..\..\bin\praatcon.exe" ename="vr" sname="praat">
+		<input pin="audio" frame="1.0s"/>		
+	</consumer>	
+
+	<consumer create="OSVad">
+		<input pin="audio-lsp;audio-pitch;audio-energy" frame="0.1s" />
+	</consumer>
+	<object create="EventMonitor:monitor" title="Boh">
+		<listen address="@" span="10000"/>
+	</object>
+
+	<!-- # Playback and Visualization
+	
+	Finally, we play back the audio signal (in case of file input only) and visualize it.	
+	
+	-->
+	<gate close="$(audio:live)">
+		<consumer create="AudioPlayer" option="..\options\aplayer">
+			<input pin="audio" frame="0.1s" />
+		</consumer>
+	</gate>
+	<consumer create="SignalPainter:plot" title="AUDIO" size="10" type="2">
+		<input pin="audio" frame="0.3s" />
+	</consumer>
+	<consumer create="SignalPainter:plot-data" title="LOUDNESS" size="10.0" type="5" colormap="3">
+		<input pin="audio-loudness" frame="0.3s" />
+	</consumer>
+	<consumer create="SignalPainter:plot-data" size="10" title="PITCH" type="5">
+		<input pin="audio-pitch" frame="0.02s" />
+	</consumer>
+	<!--<consumer create="SignalPainter:plot-data" title="JITTER AND SHIMMER" type="5">
+		<input pin="praat_vr" address="vr@praat">		
+			<transformer create="Selector" indices="13,18" />
+		</input>
+	</consumer>-->
+	<consumer create="SignalPainter:plot-data" title="JITTER" type="5">
+		<input pin="praat_vr" address="vr@praat">		
+			<transformer create="Selector" indices="13" />
+		</input>
+	</consumer>
+	<consumer create="SignalPainter:plot-data" title="SHIMMER" type="5">
+		<input pin="praat_vr" address="vr@praat">		
+			<transformer create="Selector" indices="18" />
+		</input>
+	</consumer>
+	<!--<gate open="$(audio:mffc)">
+		<consumer create="SignalPainter:plot-mffc" size="10" title="MFCC" type="1">
+			<input pin="audio-mfcc" frame="0.03s" />
+		</consumer>
+	</gate>-->
+	<!--<consumer create="PythonConsumer:plot-data" script="audio_visualization" optsstr="title=Loudness">
+		<input pin="audio-loudness" frame="0.2s"/>
+	</consumer>
+	<consumer create="PythonConsumer:plot-data" script="audio_visualization" optsstr="title=Loudness">
+		<input pin="audio-loudness" frame="0.2s"/>
+	</consumer>-->
+
+	<consumer create="FileWriter" path="..\data\tmp\voicereport" type="1">
+		<input pin="praat_vr" frame="1"/>
+	</consumer>	
+	<object create="FileEventWriter" path="..\data\tmp\voicereport">
+		<listen address="vr@praat"/>
+	</object>
+	
+	<!-- decoration -->
+	<gate close="$(audio:mffc)">
+		<object create="Decorator" icon="true" title="Pipeline">
+			<area pos="0,0,400,600">console</area>
+			<area pos="400,0,400,300">plot</area>
+			<area pos="400,400,600,300" nv="1" nh="4">plot-data*</area>
+			<!--<area pos="900,0,600,800">monitor</area>-->
+		</object>
+	</gate>
+	<gate open="$(audio:mffc)">
+		<object create="Decorator" icon="true" title="Pipeline">
+			<area pos="0,0,400,600">console</area>
+			<area pos="400,0,400,300">plot</area>
+			<area pos="400,400,600,300" nv="1" nh="4">plot-data*</area>
+			<!--<area pos="800,400,400,300">plot-mffc</area>-->
+		</object>
+	</gate>
+	<!---->
+
+</pipeline>

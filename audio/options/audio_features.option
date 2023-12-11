@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<options>
+    <item name="exe" type="CHAR" num="1024" value="..\..\bin\praatcon.exe" lock="true" help="path to praat exe" />
+    <item name="script" type="CHAR" num="1024" value="..\scripts\voicereport.praat" lock="true" help="path to praat script" />
+    <item name="script_args" type="CHAR" num="1024" value="" lock="true" help="arguments that are needed for the script" />
+    <item name="tmpwav" type="CHAR" num="1024" value="..\data\tmp\voicereport_t.wav" lock="true" help="path to tmp wave file (should end on wav)" />
+    <item name="sname" type="CHAR" num="1024" value="Audio" lock="true" help="name of sender (if consumer)" />
+    <item name="ename" type="CHAR" num="1024" value="VoiceActivity" lock="true" help="name of event (if consumer)" />
+    <item name="dimensions" type="UINT" num="1" value="27" lock="true" help="number of features extracted by script" />
+    <item name="samples" type="UINT" num="1" value="1" lock="true" help="number of samples extracted by script" />
+    <item name="undefined" type="FLOAT" num="1" value="nan" lock="true" help="replace undefined fields with this value" />
+</options>

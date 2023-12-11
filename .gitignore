@@ -1,4 +1,5 @@
 /bin/*
 !/bin/7za.exe
 !/bin/wget.exe
+!/bin/praatcon.exe
 **/__pycache__
