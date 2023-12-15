@@ -96,7 +96,7 @@
 	<consumer create="OSVad">
 		<input pin="audio-lsp;audio-pitch;audio-energy" frame="0.1s" />
 	</consumer>
-	<object create="EventMonitor:monitor" title="Boh">
+	<object create="EventMonitor:monitor" title="Events">
 		<listen address="@" span="10000"/>
 	</object>
 
@@ -129,6 +129,9 @@
 			<transformer create="Selector" indices="18" />
 		</input>
 	</consumer>
+	<consumer create="SignalPainter:plot-data" size="10" title="ENERGY" type="4">
+		<input pin="audio-energy" frame="0.02s" />
+	</consumer>
 	<!--<gate open="$(audio:mffc)">
 		<consumer create="SignalPainter:plot-mffc" size="10" title="MFCC" type="1">
 			<input pin="audio-mfcc" frame="0.03s" />
@@ -151,15 +154,13 @@
 	<!-- decoration -->
 	<gate close="$(audio:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="0,0,400,600">console</area>
-			<area pos="400,0,400,300">plot</area>
-			<area pos="400,400,600,300" nv="1" nh="4">plot-data*</area>
-			<!--<area pos="900,0,600,800">monitor</area>-->
+			<area pos="0,0,400,300">plot</area>
+			<area pos="0,400,600,300" nv="1" nh="5">plot-data*</area>
+			<area pos="900,0,600,800">monitor</area>
 		</object>
 	</gate>
 	<gate open="$(audio:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="0,0,400,600">console</area>
 			<area pos="400,0,400,300">plot</area>
 			<area pos="400,400,600,300" nv="1" nh="4">plot-data*</area>
 			<!--<area pos="800,400,400,300">plot-mffc</area>-->
