@@ -22,7 +22,7 @@ NETWORK_MESSAGE = 'SSI:STRT:RUN1\0'
 start_time = None
 elapsed_time = None
 user_body = {}
-ser = serial.Serial('COM4', 9600, timeout=1)
+ser = serial.Serial('COM5', 9600, timeout=1)
 ser.flush()
 ser.reset_input_buffer()
 
@@ -43,15 +43,18 @@ def serial_communication(message, LAST_MESSAGE, value):
 
     # print(LAST_MESSAGE, message)
     if message == "HEAD":
-        ser.write(f"HEAD_INCLINATION:{value}\n".encode('utf-8'))
+        #ser.write(f"HEAD_INCLINATION:{value}\n".encode('utf-8'))
+        ser.write(f"<h,{round(abs(value))}>\n".encode('utf-8'))
         
     if message == 1 and LAST_MESSAGE == False:
-        ser.write("VIBRATION_ON\n".encode('utf-8'))
+        #ser.write("VIBRATION_ON\n".encode('utf-8'))
+        ser.write(f"<v,1>\n".encode('utf-8'))
         print("Vibration has been turned ON!")
 
         LAST_MESSAGE = True
     elif message == 0 and LAST_MESSAGE == True:
-        ser.write("VIBRATION_OFF\n".encode('utf-8'))
+        #ser.write("VIBRATION_OFF\n".encode('utf-8'))
+        ser.write(f"<v,0>\n".encode('utf-8'))
 
         print("Vibration has been turned OFF!")
         LAST_MESSAGE = False
@@ -87,6 +90,9 @@ def nose_test(client_socket, dataTable, LAST_MESSAGE):
 
 def head_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c):
     
+    x = 0
+    y = 0
+    text = ""
     if Faceresults.multi_face_landmarks:
         for face_landmarks in Faceresults.multi_face_landmarks:
             for idx, lm in enumerate(face_landmarks.landmark):
@@ -133,13 +139,13 @@ def head_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE,
         
             # See where the user's head tilting
             if y < -10:
-                text = "Looking Left"
-            elif y > 10:
                 text = "Looking Right"
+            elif y > 10:
+                text = "Looking Left"
             elif x < -10:
-                text = "Looking Down"
-            elif x > 10:
                 text = "Looking Up"
+            elif x > 10:
+                text = "Looking Down"
             else:
                 text = "Forward"
 
@@ -190,18 +196,18 @@ def bounding_triangle(client_socket, dataTable, LAST_MESSAGE):
     return triangle_area, y_torso
 
 def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso , yTorso):
-    bounding_area_threshold = 0.1 # renderlo una proporzione
-    yTorso_threshold = 0.1 # renderlo una proporzione
-    if yTorso < standart_yTorso - yTorso_threshold:
+    bounding_area_proportion = 0.98 
+    yTorso_proportion = 0.99
+    print("Bounding", standard_bounding_triangle, triangle_area)
+    print("torso", standart_yTorso, yTorso)
+    if abs(yTorso) < abs(standart_yTorso * yTorso_proportion):
         print("Crouch detected, yTorso is too small")
-    if triangle_area < standard_bounding_triangle - bounding_area_threshold:
+    if abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
         print("Crouch detected, triangle area is too small")
-    if yTorso < standart_yTorso - yTorso_threshold and triangle_area < standard_bounding_triangle - bounding_area_threshold:
+    if abs(yTorso) < abs(standart_yTorso * yTorso_proportion) and abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE, 0)
     else:
         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE, 0)
-    
-    
     
 def compute_features(dataTable, name, COORDINATES, window_length, polyorder):
     for coord in COORDINATES:
@@ -419,6 +425,7 @@ def mediaPipe(client_socket):
 
     cap.release()
     cv2.destroyAllWindows()
+    ser.write(f"<h,0>\n".encode('utf-8'))
     # client_socket.close()
 
 
