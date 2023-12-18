@@ -1,2 +1,0 @@
-[filereader] # !ERROR! # an error occured while reading file (landmarks.stream~)
-location: ..\..\source\FileReader.cpp (230)
