@@ -22,9 +22,9 @@ NETWORK_MESSAGE = 'SSI:STRT:RUN1\0'
 start_time = None
 elapsed_time = None
 user_body = {}
-ser = serial.Serial('COM5', 9600, timeout=1)
-ser.flush()
-ser.reset_input_buffer()
+# ser = serial.Serial('COM5', 9600, timeout=1)
+# ser.flush()
+# ser.reset_input_buffer()
 
 
 def create_socket(host, port):
@@ -42,25 +42,63 @@ def serial_communication(message, LAST_MESSAGE, value):
     # COM4 is the port number of the Arduino
 
     # print(LAST_MESSAGE, message)
-    if message == "HEAD":
-        #ser.write(f"HEAD_INCLINATION:{value}\n".encode('utf-8'))
-        ser.write(f"<h,{round(abs(value))}>\n".encode('utf-8'))
+    # if message == "HEAD":
+    #     #ser.write(f"HEAD_INCLINATION:{value}\n".encode('utf-8'))
+    #     ser.write(f"<h,{round(abs(value))}>\n".encode('utf-8'))
         
-    if message == 1 and LAST_MESSAGE == False:
-        #ser.write("VIBRATION_ON\n".encode('utf-8'))
-        ser.write(f"<v,1>\n".encode('utf-8'))
-        print("Vibration has been turned ON!")
+    # if message == 1 and LAST_MESSAGE == False:
+    #     #ser.write("VIBRATION_ON\n".encode('utf-8'))
+    #     ser.write(f"<v,1>\n".encode('utf-8'))
+    #     print("Vibration has been turned ON!")
 
-        LAST_MESSAGE = True
-    elif message == 0 and LAST_MESSAGE == True:
-        #ser.write("VIBRATION_OFF\n".encode('utf-8'))
-        ser.write(f"<v,0>\n".encode('utf-8'))
+    #     LAST_MESSAGE = True
+    # elif message == 0 and LAST_MESSAGE == True:
+    #     #ser.write("VIBRATION_OFF\n".encode('utf-8'))
+    #     ser.write(f"<v,0>\n".encode('utf-8'))
 
-        print("Vibration has been turned OFF!")
-        LAST_MESSAGE = False
+    #     print("Vibration has been turned OFF!")
+    #     LAST_MESSAGE = False
 
     return LAST_MESSAGE
 
+def settings(start_time):
+    # ask the user if he wants to use a video or the webcam
+    is_online = input("Do you want to compute the data from a video or from the webcam? Press 0 to use a video, 1 to use the webcam")
+    if is_online == "1":
+        is_online = True
+    elif is_online == "0":
+        is_online = False
+    video_is_over = False
+    # ask the user how many seconds he wants to wait before starting the configuration
+    configuration_time = float(input("How many seconds do you want to wait before starting the configuration?"))
+    # configuration of the body of the user
+    if start_time == None:
+        start_time = time.time()
+    
+    return start_time, configuration_time, is_online, video_is_over
+    
+
+def OnlineOffline_management(is_online): # function to manage the online and offline mode
+    if not is_online:
+        video_path = "C:/Users/Alessandro/Desktop/Research Project/RT_HAI/Videos/VideoProva.mp4" # to change with the path of the video you want to use
+        cap = cv2.VideoCapture(video_path)
+        print("Offline mode - total number of frames: ", cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+    else:
+        cap = cv2.VideoCapture(0)
+    frame_counter = 0
+    return cap, frame_counter
+
+def offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap):
+    if frame_counter == cap.get(cv2.CAP_PROP_POS_FRAMES):
+            video_is_over = True
+    else:
+        video_is_over = False
+    frame_counter += 1  
+    print("frame number: ", frame_counter)
+    
+    return video_is_over, frame_counter
+    
 
 def send_data_network(client_socket, data):
     # send data to the server
@@ -143,9 +181,9 @@ def head_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE,
             elif y > 10:
                 text = "Looking Left"
             elif x < -10:
-                text = "Looking Up"
-            elif x > 10:
                 text = "Looking Down"
+            elif x > 10:
+                text = "Looking Up"
             else:
                 text = "Forward"
 
@@ -198,18 +236,43 @@ def bounding_triangle(client_socket, dataTable, LAST_MESSAGE):
 def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso , yTorso):
     bounding_area_proportion = 0.98 
     yTorso_proportion = 0.99
-    print("Bounding", standard_bounding_triangle, triangle_area)
-    print("torso", standart_yTorso, yTorso)
+    #print("Bounding", standard_bounding_triangle, triangle_area)
+    #print("torso", standart_yTorso, yTorso)
     if abs(yTorso) < abs(standart_yTorso * yTorso_proportion):
-        print("Crouch detected, yTorso is too small")
-    if abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
-        print("Crouch detected, triangle area is too small")
+        crouch_is_good = False
+        #print("Crouch detected, yTorso is too small")
+    elif abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
+        crouch_is_good = False
+        #print("Crouch detected, triangle area is too small")
+    else:
+        crouch_is_good = True
+    # if the user is crouching, send a message to the arduino to turn on the vibration
     if abs(yTorso) < abs(standart_yTorso * yTorso_proportion) and abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE, 0)
     else:
         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE, 0)
+
+def touching_hands(client_socket, dataTable, LAST_MESSAGE):
+    # calculate the distance between the hands
+    hands_distance = abs(dataTable[f'LEFT_WRIST_x'][-1] - dataTable[f'RIGHT_WRIST_x'][-1]) + abs(dataTable[f'LEFT_WRIST_y'][-1] - dataTable[f'RIGHT_WRIST_y'][-1]) + abs(dataTable[f'LEFT_WRIST_z'][-1] - dataTable[f'RIGHT_WRIST_z'][-1])
+    print("hands_distance: ", hands_distance)
+    if hands_distance < 0.1:
+        LAST_MESSAGE = serial_communication(1, LAST_MESSAGE, hands_distance)
+    else:
+        LAST_MESSAGE = serial_communication(0, LAST_MESSAGE, hands_distance)
+    return hands_distance
+
+def hands_visibility(client_socket, dataTable, LAST_MESSAGE):
+    # understand if the hands are visible or not
+    # print("LEFT_WRIST_visibility: ", dataTable[f'LEFT_WRIST_visibility'][-1])
+    # print("RIGHT_WRIST_visibility: ", dataTable[f'RIGHT_WRIST_visibility'][-1])
+    if dataTable[f'LEFT_WRIST_visibility'][-1] <= 0.4 and dataTable[f'RIGHT_WRIST_visibility'][-1] <= 0.4:
+        print("Hands not visible")
+    else:
+        print("Hands visible")
     
-def compute_features(dataTable, name, COORDINATES, window_length, polyorder):
+    
+def compute_features(dataTable, name, COORDINATES, window_length, polyorder, LAST_MESSAGE):
     for coord in COORDINATES:
         data_col = dataTable[f'{name}_{coord}']
         data_col[-17:] = savgol_filter(data_col[-17:], window_length, polyorder)
@@ -225,6 +288,7 @@ def compute_features(dataTable, name, COORDINATES, window_length, polyorder):
     acc_magnitude = round(acc_magnitude, 5)
     acc_magnitude = normalize(acc_magnitude)
     dataTable[acc_col].append(acc_magnitude)
+    
     
     # compute kinetic energy as the square of the velocity
     vel_sum = sum([dataTable[f'{name}_{coord}_v'][-1] for coord in COORDINATES])
@@ -247,9 +311,11 @@ def mediaPipe(client_socket):
         print("landmarks.stream file removed")
 
     # Make Detections
-    cap = cv2.VideoCapture(0)
     start_time = None
     configuration_isdone = False
+    start_time, configuration_time, is_online, video_is_over = settings(start_time)
+    cap, frame_counter = OnlineOffline_management(is_online)
+    
     # Savgol filter parameters
     window_length = 17
     polyorder = 2
@@ -272,9 +338,14 @@ def mediaPipe(client_socket):
         dataTable[f'{name}_x_v'] = []
         dataTable[f'{name}_y_v'] = []
         dataTable[f'{name}_z_v'] = []
+        dataTable[f'{name}_visibility'] = []
         dataTable[f'kinetic_Energy_{name}'] = []
         dataTable[f'{name}_acceleration'] = []
-
+        
+        
+    
+    
+        
     with open("landmarks.stream~", "a+") as f:
         with holistic as pose:
             while cap.isOpened():
@@ -302,7 +373,8 @@ def mediaPipe(client_socket):
                 face_2d = []
                 # Pose Detections
                 landmarks = results.pose_landmarks.landmark
-                
+                if not is_online:
+                    video_is_over, frame_counter = offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap)
 
                 for name in landmarks_name:
                     # append the coordinates of the landmark to the list
@@ -312,17 +384,19 @@ def mediaPipe(client_socket):
                         landmarks[mp_holistic.PoseLandmark[name].value].y)
                     dataTable[f'{name}_z'].append(
                         landmarks[mp_holistic.PoseLandmark[name].value].z)
+                    dataTable[f'{name}_visibility'].append(
+                        landmarks[mp_holistic.PoseLandmark[name].value].visibility)
                     
                     
                     # calculate the velocities as the distance between the current and the previous frame
                     if len(dataTable[f'{name}_x']) > 17:                        
                         
-                        compute_features(dataTable, name, COORDINATES, window_length, polyorder)
+                        compute_features(dataTable, name, COORDINATES, window_length, polyorder, LAST_MESSAGE)
                                             
                                                 
                     else:
-                        dataTable[f'{name}_x_v'].append(0)
-                        dataTable[f'{name}_y_v'].append(0)
+                        dataTable[f'{name}_x_v'].append(0) # append 0 if the list is empty
+                        dataTable[f'{name}_y_v'].append(0) 
                         dataTable[f'{name}_z_v'].append(0)
                         dataTable[f'kinetic_Energy_{name}'].append(0)
                         dataTable[f'{name}_acceleration'].append(0)
@@ -334,8 +408,10 @@ def mediaPipe(client_socket):
                         dataTable[f'{name}_x_v'].pop(0)
                         dataTable[f'{name}_y_v'].pop(0)
                         dataTable[f'{name}_z_v'].pop(0)
+                        dataTable[f'{name}_visibility'].pop(0)
                         dataTable[f'kinetic_Energy_{name}'].pop(0)
                         dataTable[f'{name}_acceleration'].pop(0)
+                        
                     # print(dataTable[f'kinetic_Energy_{name}'][-1])
                     # print(dataTable[f'{name}_x'])
                     # print(name)
@@ -361,11 +437,9 @@ def mediaPipe(client_socket):
                 
                 
                 ##############################################################################
-                # configuration of the body of the user
-                if start_time == None:
-                    start_time = time.time()
+                
                 elapsed_time = time.time() - start_time
-                if elapsed_time > 5 and configuration_isdone == False:
+                if elapsed_time > configuration_time and configuration_isdone == False:
                     user_body, standard_bounding_triangle, standart_yTorso = body_settings(client_socket, dataTable, LAST_MESSAGE)
                     configuration_isdone = True
                 
@@ -374,58 +448,63 @@ def mediaPipe(client_socket):
                 if configuration_isdone == True:
                     #test nose position threshold
                     #nose_test(client_socket, dataTable, LAST_MESSAGE)
-                    print(dataTable[f'NOSE_acceleration'][-1])
+                    #print(dataTable[f'NOSE_acceleration'][-1])
                     triangle_area, yTorso = bounding_triangle(client_socket, dataTable, LAST_MESSAGE)
                     #print(dataTable[f'NOSE_x'][-1], dataTable[f'NOSE_y'][-1], dataTable[f'NOSE_z'][-1])
                     crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso, yTorso)
+                    #touching_hands(client_socket, dataTable, LAST_MESSAGE)
+                    hands_visibility(client_socket, dataTable, LAST_MESSAGE)
                     # call a function that do the head inclination detection
                     headAlert, head_y = head_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c)
+                    
+                    
                     
                 ##################################################################################
 
                
-                
-                # Render landmarks
-                #1. Draw face landmarks
-                mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION,
-                                          mp_drawing.DrawingSpec(
-                                              color=(80, 110, 10), thickness=1, circle_radius=1),
-                                          mp_drawing.DrawingSpec(
-                                              color=(80, 256, 121), thickness=1, circle_radius=1)
-                                          )
+                if is_online:
+                    # Render landmarks
+                    #1. Draw face landmarks
+                    mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION,
+                                            mp_drawing.DrawingSpec(
+                                                color=(80, 110, 10), thickness=1, circle_radius=1),
+                                            mp_drawing.DrawingSpec(
+                                                color=(80, 256, 121), thickness=1, circle_radius=1)
+                                            )
 
-                # 2. Right hand
-                mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
-                                          mp_drawing.DrawingSpec(
-                                              color=(80, 22, 10), thickness=2, circle_radius=4),
-                                          mp_drawing.DrawingSpec(
-                                              color=(80, 44, 121), thickness=2, circle_radius=2)
-                                          )
+                    # 2. Right hand
+                    mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
+                                            mp_drawing.DrawingSpec(
+                                                color=(80, 22, 10), thickness=2, circle_radius=4),
+                                            mp_drawing.DrawingSpec(
+                                                color=(80, 44, 121), thickness=2, circle_radius=2)
+                                            )
 
-                # 3. Left Hand
-                mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
-                                          mp_drawing.DrawingSpec(
-                                              color=(121, 22, 76), thickness=2, circle_radius=4),
-                                          mp_drawing.DrawingSpec(
-                                              color=(121, 44, 250), thickness=2, circle_radius=2)
-                                          )
+                    # 3. Left Hand
+                    mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
+                                            mp_drawing.DrawingSpec(
+                                                color=(121, 22, 76), thickness=2, circle_radius=4),
+                                            mp_drawing.DrawingSpec(
+                                                color=(121, 44, 250), thickness=2, circle_radius=2)
+                                            )
 
-                # 4. Pose Detections
-                mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
-                                          mp_drawing.DrawingSpec(
-                                              color=(245, 117, 66), thickness=2, circle_radius=4),
-                                          mp_drawing.DrawingSpec(
-                                              color=(245, 66, 230), thickness=2, circle_radius=2)
-                                          )
+                    # 4. Pose Detections
+                    mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
+                                            mp_drawing.DrawingSpec(
+                                                color=(245, 117, 66), thickness=2, circle_radius=4),
+                                            mp_drawing.DrawingSpec(
+                                                color=(245, 66, 230), thickness=2, circle_radius=2)
+                                            )
 
-                cv2.imshow('MediaPipe Feed', image)
+                    cv2.imshow('MediaPipe Feed', image)
 
-                if cv2.waitKey(10) & 0xFF == ord('q'):
+                if cv2.waitKey(10) & 0xFF == ord('q') or video_is_over:
                     break
 
     cap.release()
     cv2.destroyAllWindows()
-    ser.write(f"<h,0>\n".encode('utf-8'))
+    
+    # ser.write(f"<h,0>\n".encode('utf-8')) # uncoment this line if you want to use the arduino
     # client_socket.close()
 
 
