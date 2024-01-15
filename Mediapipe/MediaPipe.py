@@ -22,55 +22,92 @@ NETWORK_MESSAGE = 'SSI:STRT:RUN1\0'
 start_time = None
 elapsed_time = None
 user_body = {}
-# ser = serial.Serial('COM5', 9600, timeout=1)
-# ser.flush()
-# ser.reset_input_buffer()
+arduino_is_connected = False
+
+try: # to check if the arduino is connected to the PC and manage errors related to the serial communication
+    ser = serial.Serial('COM5', 9600, timeout=1)
+    ser.flush()
+    ser.reset_input_buffer()
+    arduino_is_connected = True
+except serial.SerialException as e:
+    print("The Arduino is not connected to the PC, using the test mode")
+    arduino_is_connected = False
+    pass
 
 
-def create_socket(host, port):
-    # create a socket and send data to the server
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    client_socket.sendto(bytes(NETWORK_MESSAGE, "utf-8"), (HOST, SYNC))
-    print("Socket connected")
-    # client_socket.connect((host, port))  # connect to the server
-    # print("Connected to server")
-    return client_socket
 
 
-def serial_communication(message, LAST_MESSAGE, value):
+def manage_socket(host, port, state, ssi_is_connected):
+    if state == "start":
+        ssi_is_connected = input("Is the SSI connected? Press 0 if it is not connected, 1 if it is connected")
+        if ssi_is_connected == "1":
+            # create a socket and send data to the server
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            client_socket.sendto(bytes(NETWORK_MESSAGE, "utf-8"), (HOST, SYNC))
+            print("Socket connected")
+            # client_socket.connect((host, port))  # connect to the server
+            # print("Connected to server")
+            return client_socket, ssi_is_connected
+        elif ssi_is_connected == "0":
+            return None, ssi_is_connected
+        else:
+            print("Wrong input, please try again")
+            manage_socket(host, port, state)
+    if state == "stop":
+        if ssi_is_connected == "1":
+            # client_socket.sendto(bytes("SSI:STOP:RUN1\0", "utf-8"), (HOST, SYNC)) # send a message to the server to stop the acquisition
+            print("Socket closed")
+            client_socket.close()
+            return None, ssi_is_connected
+        elif ssi_is_connected == "0":
+            return None, ssi_is_connected
+
+
+def serial_communication(message, LAST_MESSAGE, value, arduino_is_connected = arduino_is_connected):
     # --- ARDUINO-PC SERIAL COMMUNICATION SECTION --
     # COM4 is the port number of the Arduino
+    if arduino_is_connected:
+        print(LAST_MESSAGE, message)
+        if message == "HEAD":
+            #ser.write(f"HEAD_INCLINATION:{value}\n".encode('utf-8'))
+            ser.write(f"<h,{round(abs(value))}>\n".encode('utf-8'))
+            
+        if message == 1 and LAST_MESSAGE == False:
+            #ser.write("VIBRATION_ON\n".encode('utf-8'))
+            ser.write(f"<v,1>\n".encode('utf-8'))
+            print("Vibration has been turned ON!")
 
-    # print(LAST_MESSAGE, message)
-    # if message == "HEAD":
-    #     #ser.write(f"HEAD_INCLINATION:{value}\n".encode('utf-8'))
-    #     ser.write(f"<h,{round(abs(value))}>\n".encode('utf-8'))
-        
-    # if message == 1 and LAST_MESSAGE == False:
-    #     #ser.write("VIBRATION_ON\n".encode('utf-8'))
-    #     ser.write(f"<v,1>\n".encode('utf-8'))
-    #     print("Vibration has been turned ON!")
+            LAST_MESSAGE = True
+        elif message == 0 and LAST_MESSAGE == True:
+            #ser.write("VIBRATION_OFF\n".encode('utf-8'))
+            ser.write(f"<v,0>\n".encode('utf-8'))
 
-    #     LAST_MESSAGE = True
-    # elif message == 0 and LAST_MESSAGE == True:
-    #     #ser.write("VIBRATION_OFF\n".encode('utf-8'))
-    #     ser.write(f"<v,0>\n".encode('utf-8'))
-
-    #     print("Vibration has been turned OFF!")
-    #     LAST_MESSAGE = False
+            print("Vibration has been turned OFF!")
+            LAST_MESSAGE = False
 
     return LAST_MESSAGE
 
 def settings(start_time):
     # ask the user if he wants to use a video or the webcam
-    is_online = input("Do you want to compute the data from a video or from the webcam? Press 0 to use a video, 1 to use the webcam")
+    time.sleep(0.5)
+    is_online = input("Do you want to compute the data from a video or from the webcam? Press 0 to use a video, 1 to use the webcam \n")
     if is_online == "1":
         is_online = True
     elif is_online == "0":
         is_online = False
+    else:
+        print("Wrong input, please try again")
+        settings(start_time)
     video_is_over = False
+    
     # ask the user how many seconds he wants to wait before starting the configuration
-    configuration_time = float(input("How many seconds do you want to wait before starting the configuration?"))
+    configuration_time = float(input("How many seconds do you want to wait before starting the configuration? "))
+    # check if the configuration time is a number
+    try:
+        configuration_time = float(configuration_time)
+    except:
+        print("Wrong input, please try again")
+        settings(start_time)
     # configuration of the body of the user
     if start_time == None:
         start_time = time.time()
@@ -96,8 +133,19 @@ def offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap
         video_is_over = False
     frame_counter += 1  
     print("frame number: ", frame_counter)
-    
     return video_is_over, frame_counter
+
+def offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, csv_file): # function to compute the overall features of the video
+    dataframe = pd.read_csv(csv_file)
+    most_frequent_features = {}
+    # compute the mean of the features
+    features_coloumns = ['crouch', 'hands_distance', 'hands_visibility'] # TO DO: add the other features, 'body_direction', 'head_direction'
+    print(" \n Final Outcomes:")
+    for feature in features_coloumns:
+        values_count = dataframe[feature].value_counts()
+        featuresTable[feature] = values_count.idxmax()
+        most_frequent_features[feature] = values_count.idxmax()
+        print(f"Most frequent {feature}: ", values_count.idxmax())
     
 
 def send_data_network(client_socket, data):
@@ -114,22 +162,24 @@ def normalize(value): # to adapt when we will have the real values from experime
     min_value = 0
     return (value - min_value) / (max_value - min_value)
 
-def nose_test(client_socket, dataTable, LAST_MESSAGE):
+def nose_test(client_socket, dataTable, LAST_MESSAGE): # function to test basic script's functionalities
     # test 
     nose_test = 1 - dataTable[f'{"NOSE"}_y'][-1]
     # send data to the server
     send_data_network(client_socket, str(
         nose_test) + "\n")
-
     if dataTable[f'{"NOSE"}_y'][-1] < 0.5:
         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE)
     else:
-        LAST_MESSAGE = serial_communication(0, LAST_MESSAGE)
-
-def head_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c):
+        LAST_MESSAGE = serial_communication(0, LAST_MESSAGE) 
     
+        
+
+def bodyAndFace_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable):
     x = 0
     y = 0
+    body_2d = []
+    body_3d = []
     text = ""
     if Faceresults.multi_face_landmarks:
         for face_landmarks in Faceresults.multi_face_landmarks:
@@ -144,13 +194,27 @@ def head_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE,
                     # Get the 2D Coordinates
                     face_2d.append([x, y])
                     # Get the 3D Coordinates
-                    face_3d.append([x, y, lm.z])       
+                    face_3d.append([x, y, lm.z])   
+            point_beetwen_shoulders_2d = ((dataTable[f'LEFT_SHOULDER_x'][-1] + dataTable[f'RIGHT_SHOULDER_x'][-1] / 2) * img_w , (dataTable[f'LEFT_SHOULDER_y'][-1] + dataTable[f'RIGHT_SHOULDER_y'][-1] / 2 * img_h))
+            point_beetwen_shoulders_3d = ((dataTable[f'LEFT_SHOULDER_x'][-1] + dataTable[f'RIGHT_SHOULDER_x'][-1] / 2) * img_w , (dataTable[f'LEFT_SHOULDER_y'][-1] + dataTable[f'RIGHT_SHOULDER_y'][-1] / 2) * img_h, (dataTable[f'LEFT_SHOULDER_z'][-1] + dataTable[f'RIGHT_SHOULDER_z'][-1] / 2) * 3000)
+            
+            # point_beetwen_shoulders_2d = (dataTable[f'LEFT_SHOULDER_x'][-1] * img_w , dataTable[f'LEFT_SHOULDER_y'][-1] * img_h)
+            # point_beetwen_shoulders_3d = (dataTable[f'LEFT_SHOULDER_x'][-1] * img_w , dataTable[f'LEFT_SHOULDER_y'][-1] * img_h, dataTable[f'LEFT_SHOULDER_z'][-1] * 3000)
+            
+            for landmark in ["LEFT_SHOULDER", "RIGHT_SHOULDER", "LEFT_HIP", "RIGHT_HIP"]:
+                x, y = int(dataTable[f'{landmark}_x'][-1] * img_w), int(dataTable[f'{landmark}_y'][-1] * img_h)
+                # Get the 2D Coordinates
+                body_2d.append([x, y])
+                # Get the 3D Coordinates
+                body_3d.append([x, y, dataTable[f'{landmark}_z'][-1]])
             # Convert it to the NumPy array
             face_2d = np.array(face_2d, dtype=np.float64)
-
+            body_2d = np.array(body_2d, dtype=np.float64)
+            
             # Convert it to the NumPy array
             face_3d = np.array(face_3d, dtype=np.float64)
-
+            body_3d = np.array(body_3d, dtype=np.float64)
+            
             # The camera matrix
             focal_length = 1 * img_w
 
@@ -163,17 +227,23 @@ def head_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE,
 
             # Solve PnP
             success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, dist_matrix)
-
+            body_success, body_rot_vec, body_trans_vec = cv2.solvePnP(body_3d, body_2d, cam_matrix, dist_matrix)
+            
             # Get rotational matrix
             rmat, jac = cv2.Rodrigues(rot_vec)
-
+            body_rmat, body_jac = cv2.Rodrigues(body_rot_vec)
+            
             # Get angles
             angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
-
+            body_angles, body_mtxR, body_mtxQ, body_Qx, body_Qy, body_Qz = cv2.RQDecomp3x3(body_rmat)
+            
             # Get the y rotation degree
             x = angles[0] * 360
             y = angles[1] * 360
             z = angles[2] * 360
+            body_x = body_angles[0] * 360
+            body_y = body_angles[1] * 360
+            body_z = body_angles[2] * 360
         
             # See where the user's head tilting
             if y < -10:
@@ -185,25 +255,41 @@ def head_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE,
             elif x > 10:
                 text = "Looking Up"
             else:
-                text = "Forward"
+                text = "Looking Forward"
+            if body_x < -10:
+                body_text = "Body Right"
+                print("Body Right")
+            elif body_x > 10:
+                body_text = "Body Left"
+                print("Body Left")
+            else:
+                body_text = "Body Forward"
+                print("Body Forward")
 
-            # Display the nose direction
+            featuresTable[f'body_direction'].append(body_text)
+            featuresTable[f'head_direction'].append(text)
+            
+            # Display the nose and body direction
             nose_3d_projection, jacobian = cv2.projectPoints(nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
+            body_3d_projection, body_jacobian = cv2.projectPoints(body_3d, body_rot_vec, body_trans_vec, cam_matrix, dist_matrix)
 
             p1 = (int(nose_2d[0]), int(nose_2d[1]))
             p2 = (int(nose_2d[0] + y * 10) , int(nose_2d[1] - x * 10))
-            
+                        
             cv2.line(image, p1, p2, (255, 0, 0), 3)
+            
 
-            # Add the text on the image
+
+            # Add text and lines to the image
             cv2.putText(image, text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-            cv2.putText(image, "x: " + str(np.round(x,2)), (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            cv2.putText(image, "y: " + str(np.round(y,2)), (500, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            cv2.putText(image, "z: " + str(np.round(z,2)), (500, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(image, "x: " + str(np.round(x, 2)), (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(image, "y: " + str(np.round(y, 2)), (500, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(image, "z: " + str(np.round(z, 2)), (500, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                
     serial_communication("HEAD", LAST_MESSAGE, y)
     return text, y
         
-def body_settings(client_socket, dataTable, LAST_MESSAGE):
+def body_settings(client_socket, dataTable, LAST_MESSAGE): # function to set the body of the user as the standard one
     user_body = dataTable.copy()
     # set values for the body as the mean of the values adding appending the mean to the list
     for name in user_body:
@@ -233,7 +319,7 @@ def bounding_triangle(client_socket, dataTable, LAST_MESSAGE):
     y_torso = torso_points[0][1] - torso_points[3][1]
     return triangle_area, y_torso
 
-def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso , yTorso):
+def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso , yTorso, featuresTable):
     bounding_area_proportion = 0.98 
     yTorso_proportion = 0.99
     #print("Bounding", standard_bounding_triangle, triangle_area)
@@ -243,36 +329,44 @@ def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle
         #print("Crouch detected, yTorso is too small")
     elif abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
         crouch_is_good = False
+        featuresTable[f'crouch'].append("Crouched") 
         #print("Crouch detected, triangle area is too small")
     else:
         crouch_is_good = True
+        featuresTable[f'crouch'].append("Not crouched")
     # if the user is crouching, send a message to the arduino to turn on the vibration
     if abs(yTorso) < abs(standart_yTorso * yTorso_proportion) and abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE, 0)
     else:
         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE, 0)
 
-def touching_hands(client_socket, dataTable, LAST_MESSAGE):
+def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable):
     # calculate the distance between the hands
     hands_distance = abs(dataTable[f'LEFT_WRIST_x'][-1] - dataTable[f'RIGHT_WRIST_x'][-1]) + abs(dataTable[f'LEFT_WRIST_y'][-1] - dataTable[f'RIGHT_WRIST_y'][-1]) + abs(dataTable[f'LEFT_WRIST_z'][-1] - dataTable[f'RIGHT_WRIST_z'][-1])
-    print("hands_distance: ", hands_distance)
+    #print("hands_distance: ", hands_distance)
     if hands_distance < 0.1:
         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE, hands_distance)
+        featuresTable[f'hands_distance'].append("Hands touching")
     else:
         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE, hands_distance)
+        featuresTable[f'hands_distance'].append("Hands not touching")
     return hands_distance
 
-def hands_visibility(client_socket, dataTable, LAST_MESSAGE):
+def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable):
     # understand if the hands are visible or not
     # print("LEFT_WRIST_visibility: ", dataTable[f'LEFT_WRIST_visibility'][-1])
     # print("RIGHT_WRIST_visibility: ", dataTable[f'RIGHT_WRIST_visibility'][-1])
     if dataTable[f'LEFT_WRIST_visibility'][-1] <= 0.4 and dataTable[f'RIGHT_WRIST_visibility'][-1] <= 0.4:
-        print("Hands not visible")
+        hands_are_visible = False
+        featuresTable[f'hands_visibility'].append("Hands not visible")
+        #print("Hands not visible")
     else:
-        print("Hands visible")
+        hands_are_visible = True
+        featuresTable[f'hands_visibility'].append("Hands visible")
+        #print("Hands visible")
     
     
-def compute_features(dataTable, name, COORDINATES, window_length, polyorder, LAST_MESSAGE):
+def compute_main_features(dataTable, name, COORDINATES, window_length, polyorder, LAST_MESSAGE): # function to compute the main features of the data (velocity, acceleration, kinetic energy)
     for coord in COORDINATES:
         data_col = dataTable[f'{name}_{coord}']
         data_col[-17:] = savgol_filter(data_col[-17:], window_length, polyorder)
@@ -294,9 +388,10 @@ def compute_features(dataTable, name, COORDINATES, window_length, polyorder, LAS
     vel_sum = sum([dataTable[f'{name}_{coord}_v'][-1] for coord in COORDINATES])
     dataTable[f'kinetic_Energy_{name}'].append(normalize((vel_sum**2)/2))
     
+
+    
  
-def mediaPipe(client_socket):
-    global configuration
+def mediaPipe(client_socket, ssi_is_connected):
     # Setup MediaPipe Holistic instance
     mp_holistic = mp.solutions.holistic
     holistic = mp_holistic.Holistic(
@@ -330,6 +425,7 @@ def mediaPipe(client_socket):
     
     # create a dictionary with the landmarks as keys
     dataTable = {}
+    featuresTable = {}
     # create a table with the landmarks as columns
     for name in landmarks_name:
         dataTable[f'{name}_x'] = []
@@ -341,7 +437,11 @@ def mediaPipe(client_socket):
         dataTable[f'{name}_visibility'] = []
         dataTable[f'kinetic_Energy_{name}'] = []
         dataTable[f'{name}_acceleration'] = []
-        
+    featuresTable[f'body_direction'] = []
+    featuresTable[f'head_direction'] = []
+    featuresTable[f'crouch'] = []
+    featuresTable[f'hands_distance'] = []
+    featuresTable[f'hands_visibility'] = []    
         
     
     
@@ -356,13 +456,13 @@ def mediaPipe(client_socket):
                 image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 image.flags.writeable = False
 
+                # Make Detections for the face 
                 mp_face_mesh = mp.solutions.face_mesh
                 face_mesh = mp_face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence=0.5)
                 
                 # Make Detections
                 results = holistic.process(image)
                 Faceresults = face_mesh.process(image)
-                
                 # Recolor image back to BGR for rendering
                 image.flags.writeable = True
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -391,7 +491,7 @@ def mediaPipe(client_socket):
                     # calculate the velocities as the distance between the current and the previous frame
                     if len(dataTable[f'{name}_x']) > 17:                        
                         
-                        compute_features(dataTable, name, COORDINATES, window_length, polyorder, LAST_MESSAGE)
+                        compute_main_features(dataTable, name, COORDINATES, window_length, polyorder, LAST_MESSAGE)
                                             
                                                 
                     else:
@@ -411,28 +511,14 @@ def mediaPipe(client_socket):
                         dataTable[f'{name}_visibility'].pop(0)
                         dataTable[f'kinetic_Energy_{name}'].pop(0)
                         dataTable[f'{name}_acceleration'].pop(0)
-                        
-                    # print(dataTable[f'kinetic_Energy_{name}'][-1])
-                    # print(dataTable[f'{name}_x'])
-                    # print(name)
+                    # TO DO: the same for the features table, at the moment there is the problem with the OFFLINE MODE
+                    
                 if len(dataTable[f'NOSE_x']) == 1:
                     # cancello il file csv se esiste
                     if os.path.exists('dataTable.csv'):
                         os.remove('dataTable.csv')
                 
-                # create and update the csv file with the data
-                if len(dataTable[f'NOSE_x']) > 16:
-                    # se non esiste creo un file csv con i nomi delle colonne
-                    if not os.path.exists('dataTable.csv'):
-                        with open('dataTable.csv', 'a+') as f:
-                            writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                            writer.writerow([f'{name}_x' for name in landmarks_name] + [f'{name}_y' for name in landmarks_name] + [f'{name}_z' for name in landmarks_name] + [f'{name}_x_v' for name in landmarks_name] + [f'{name}_y_v' for name in landmarks_name] + [f'{name}_z_v' for name in landmarks_name] + [f'kinetic_Energy_{name}' for name in landmarks_name] + [f'{name}_acceleration' for name in landmarks_name])
-                    
-                    ai_data = list(np.array( [dataTable[f'{name}_x'][-1] for name in landmarks_name] + [dataTable[f'{name}_y'][-1] for name in landmarks_name] + [dataTable[f'{name}_z'][-1] for name in landmarks_name] + [dataTable[f'{name}_x_v'][-1] for name in landmarks_name] + [dataTable[f'{name}_y_v'][-1] for name in landmarks_name] + [dataTable[f'{name}_z_v'][-1] for name in landmarks_name] + [dataTable[f'kinetic_Energy_{name}'][-1] for name in landmarks_name] + [dataTable[f'{name}_acceleration'][-1] for name in landmarks_name] ).flatten() )
-                    ai_data.insert(0, "CLASSE")
-                    with open('dataTable.csv', 'a') as f:
-                        writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                        writer.writerow(ai_data)
+                
                     
                 
                 
@@ -451,18 +537,35 @@ def mediaPipe(client_socket):
                     #print(dataTable[f'NOSE_acceleration'][-1])
                     triangle_area, yTorso = bounding_triangle(client_socket, dataTable, LAST_MESSAGE)
                     #print(dataTable[f'NOSE_x'][-1], dataTable[f'NOSE_y'][-1], dataTable[f'NOSE_z'][-1])
-                    crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso, yTorso)
-                    #touching_hands(client_socket, dataTable, LAST_MESSAGE)
-                    hands_visibility(client_socket, dataTable, LAST_MESSAGE)
+                    crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso, yTorso,featuresTable)
+                    touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable)
+                    hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable)
                     # call a function that do the head inclination detection
-                    headAlert, head_y = head_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c)
-                    
-                    
+                    headAlert, head_y = bodyAndFace_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable)
+                    # create and update the csv file with the data
                     
                 ##################################################################################
-
+                if len(featuresTable[f'crouch']) > 1:
+                        # se non esiste creo un file csv con i nomi delle colonne
+                        if not os.path.exists('dataTable.csv'):
+                            with open('dataTable.csv', 'a+') as f:
+                                writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                                writer.writerow([f'{name}_x' for name in landmarks_name] + [f'{name}_y' for name in landmarks_name] + [f'{name}_z' for name in landmarks_name] + [f'{name}_x_v' for name in landmarks_name] + [f'{name}_y_v' for name in landmarks_name] + [f'{name}_z_v' for name in landmarks_name] 
+                                                + [f'kinetic_Energy_{name}' for name in landmarks_name] + [f'{name}_acceleration' for name in landmarks_name] + [f'{name}_visibility' for name in landmarks_name] + ['crouch', 'hands_distance', 'hands_visibility'
+                                                                                                                                                                                                                     # , 'body_direction', 'head_direction' TO DO: NOT WORKING IN OFFLINE MODE
+                                                                                                                                                                                                                      ] )
+                        #print(featuresTable)
+                        ai_data = list(np.array( [dataTable[f'{name}_x'][-1] for name in landmarks_name] + [dataTable[f'{name}_y'][-1] for name in landmarks_name] + [dataTable[f'{name}_z'][-1] for name in landmarks_name] + [dataTable[f'{name}_x_v'][-1] for name in landmarks_name] + [dataTable[f'{name}_y_v'][-1] for name in landmarks_name] 
+                                                + [dataTable[f'{name}_z_v'][-1] for name in landmarks_name] + [dataTable[f'kinetic_Energy_{name}'][-1] for name in landmarks_name] + [dataTable[f'{name}_acceleration'][-1] for name in landmarks_name] 
+                                                + [dataTable[f'{name}_visibility'][-1] for name in landmarks_name] + [featuresTable[f'crouch'][-1], featuresTable[f'hands_distance'][-1], featuresTable[f'hands_visibility'][-1]
+                                                # , featuresTable[f'body_direction'][-1], featuresTable[f'head_direction'][-1]  TO DO: NOT WORKING IN OFFLINE MODE                                                                 
+                                                                                                                      ] ))
+                        ai_data.insert(0, "CLASSE") # to change with the class of the user !!!
+                        with open('dataTable.csv', 'a') as f:
+                            writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                            writer.writerow(ai_data)
                
-                if is_online:
+                if True:
                     # Render landmarks
                     #1. Draw face landmarks
                     mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION,
@@ -499,13 +602,16 @@ def mediaPipe(client_socket):
                     cv2.imshow('MediaPipe Feed', image)
 
                 if cv2.waitKey(10) & 0xFF == ord('q') or video_is_over:
+                    try:
+                        offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
+                    except:
+                        print("ERROR: dataTable.csv not found")
                     break
 
     cap.release()
     cv2.destroyAllWindows()
-    
-    # ser.write(f"<h,0>\n".encode('utf-8')) # uncoment this line if you want to use the arduino
-    # client_socket.close()
+
+    manage_socket(HOST, PORT, "stop", ssi_is_connected)
 
 
 if __name__ == "__main__":
@@ -514,8 +620,8 @@ if __name__ == "__main__":
     port = 9000
 
     # create a socket
-    #client_socket = create_socket(host, port)
-    client_socket = 1
+    client_socket, ssi_is_connected = manage_socket(host, port, state = "start", ssi_is_connected = "")
+    #client_socket = 1
     # start mediapipe
-    mediaPipe(client_socket)
+    mediaPipe(client_socket, ssi_is_connected)
   
