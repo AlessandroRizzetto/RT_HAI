@@ -117,7 +117,7 @@ def settings(start_time):
 
 def OnlineOffline_management(is_online): # function to manage the online and offline mode
     if not is_online:
-        video_path = "C:/Users/Alessandro/Desktop/Research Project/RT_HAI/Videos/VideoProva.mp4" # to change with the path of the video you want to use
+        video_path = "C:/Users/Alessandro/Desktop/Research Project/RT_HAI/Videos/VideoProva_short.mp4" # to change with the path of the video you want to use
         cap = cv2.VideoCapture(video_path)
         print("Offline mode - total number of frames: ", cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
@@ -127,12 +127,14 @@ def OnlineOffline_management(is_online): # function to manage the online and off
     return cap, frame_counter
 
 def offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap):
-    if frame_counter == cap.get(cv2.CAP_PROP_POS_FRAMES):
+    if frame_counter == int(cap.get(cv2.CAP_PROP_FRAME_COUNT)):
             video_is_over = True
+            print("Video is over")
     else:
         video_is_over = False
+    
     frame_counter += 1  
-    print("frame number: ", frame_counter)
+    print("frame number: ", frame_counter, " / ", int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
     return video_is_over, frame_counter
 
 def offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, csv_file): # function to compute the overall features of the video
@@ -565,7 +567,7 @@ def mediaPipe(client_socket, ssi_is_connected):
                             writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                             writer.writerow(ai_data)
                
-                if True:
+                if is_online:
                     # Render landmarks
                     #1. Draw face landmarks
                     mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION,
@@ -610,7 +612,8 @@ def mediaPipe(client_socket, ssi_is_connected):
 
     cap.release()
     cv2.destroyAllWindows()
-
+    
+    offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
     manage_socket(HOST, PORT, "stop", ssi_is_connected)
 
 
