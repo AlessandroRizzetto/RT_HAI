@@ -126,7 +126,7 @@ def OnlineOffline_management(is_online): # function to manage the online and off
     frame_counter = 0
     return cap, frame_counter
 
-def offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap):
+def offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap): # TO DO: not working properly, video not stopping when it is over
     if frame_counter == int(cap.get(cv2.CAP_PROP_FRAME_COUNT)):
             video_is_over = True
             print("Video is over")
