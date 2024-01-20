@@ -40,20 +40,28 @@
 	</gate>
 
 	<gate close="$(audio:live)">
-		<sensor create="WavReader:reader" path="..\data\speech.wav" loop="true">
+		<sensor create="WavReader:reader" path="..\data\audio.wav" loop="true">
 			<output channel="audio" pin="audio" size="2.0s" />
 		</sensor>
 	</gate>
 	<!---->
 
-	<!-- # Preprocessing
-	> Pitch: `OSPitchShs` (filter)
-	> Loudness: `OSIntensity` (feature)
-	-->
 	<transformer create="DownSample" keep="4">
 		<input pin="audio" frame="9"/>
 		<output pin="audio-down"/>
 	</transformer>
+
+	<transformer create="PythonFilter" script="vad" syspath="..\scripts">
+		<input pin="audio-down" frame="0.1s"/>
+		<output pin="python_vad"/>
+	</transformer>
+
+	<!-- # Preprocessing with OpenSMILE
+	> Pitch: `OSPitchShs` (filter)
+	> Energy: `OSEnergy` (feature)
+	> Loudness: `OSIntensity` (feature)
+	> MFCC: `OSMfccChain` (feature)
+	-->
 	<transformer create="OSPitchChain" option="..\options\pitch">
 		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
 		<output pin="audio-pitch"/>
@@ -62,9 +70,9 @@
 		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
 		<output pin="audio-energy"/>
 	</transformer>
-	<transformer create="OSLpc" saveLPCoeff="false" lsp="true">
-		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
-		<output pin="audio-lsp"/>
+	<transformer create="OSIntensity" intensity="0" loudness="1">
+		<input pin="audio-down" frame="0.3s" />
+		<output pin="audio-loudness" />
 	</transformer>
 	<gate open="$(audio:mffc)">
 		<transformer create="OSMfccChain" option="..\0options\mfcc">
@@ -72,11 +80,9 @@
 			<output pin="audio-mfcc"/>
 		</transformer>
 	</gate>
-	<transformer create="OSIntensity" intensity="0" loudness="1">
-		<input pin="audio-down" frame="0.3s" />
-		<output pin="audio-loudness" />
-	</transformer>
-	<!-- 
+	<!---->
+	<!-- # Preprocessing with Praat
+		Given a 1s audio frame, the following features are extracted:
 		0) duration
 		1) pitch_median 2) pitch_mean 3) pitch_std_dev 4) pitch_min 5) pitch_max
 		6) pulses_number 7) pulses_period_number 8) pulses_mean_period 9) pulses_std_dev_period
@@ -86,23 +92,22 @@
 		24) harmonicity_autocorr 25) harmonicity_noise_to_harmonics_ratio 26) harmonicity_harmonics_to_noise_ratio:
 	-->
 	<transformer create="PraatVoiceReportT" option="..\options\audio_features" script="..\scripts\voicereport.praat" tmpwav="..\data\tmp\voicereport_t.wav" exe="..\..\bin\praatcon.exe">
-		<input pin="audio" frame="1.0s"/>
+		<input pin="audio-down" frame="1.0s"/>
 		<output pin="praat_vr"/>
 	</transformer>
 	<consumer create="PraatVoiceReport" script="..\scripts\voicereport.praat" tmpwav="..\data\tmp\voicereport.wav" exe="..\..\bin\praatcon.exe" ename="vr" sname="praat">
-		<input pin="audio" frame="1.0s"/>		
-	</consumer>	
-
-	<consumer create="OSVad">
-		<input pin="audio-lsp;audio-pitch;audio-energy" frame="0.1s" />
+		<input pin="audio-down" frame="1.0s"/>		
 	</consumer>
+	<!---->
+	
+
 	<object create="EventMonitor:monitor" title="Events">
-		<listen address="@" span="10000"/>
+		<listen address="vad@audio" span="10000"/>
 	</object>
 
 	<!-- # Playback and Visualization
 	
-	Finally, we play back the audio signal (in case of file input only) and visualize it.	
+	Then we play back the audio signal and visualize its informations.
 	
 	-->
 	<gate close="$(audio:live)">
@@ -132,17 +137,15 @@
 	<consumer create="SignalPainter:plot-data" size="10" title="ENERGY" type="4">
 		<input pin="audio-energy" frame="0.02s" />
 	</consumer>
-	<!--<gate open="$(audio:mffc)">
+	<consumer create="SignalPainter:plota" title="VAD" size="10" type="2">
+		<input pin="python_vad" frame="0.1s" />
+	</consumer>
+	<gate open="$(audio:mffc)">
 		<consumer create="SignalPainter:plot-mffc" size="10" title="MFCC" type="1">
 			<input pin="audio-mfcc" frame="0.03s" />
 		</consumer>
-	</gate>-->
-	<!--<consumer create="PythonConsumer:plot-data" script="audio_visualization" optsstr="title=Loudness">
-		<input pin="audio-loudness" frame="0.2s"/>
-	</consumer>
-	<consumer create="PythonConsumer:plot-data" script="audio_visualization" optsstr="title=Loudness">
-		<input pin="audio-loudness" frame="0.2s"/>
-	</consumer>-->
+	</gate>
+	<!---->
 
 	<consumer create="FileWriter" path="..\data\tmp\voicereport" type="1">
 		<input pin="praat_vr" frame="1"/>
@@ -156,6 +159,7 @@
 		<object create="Decorator" icon="true" title="Pipeline">
 			<area pos="0,0,400,300">plot</area>
 			<area pos="0,400,600,300" nv="1" nh="5">plot-data*</area>
+			<area pos="400,0,400,300">plota</area>
 			<area pos="900,0,600,800">monitor</area>
 		</object>
 	</gate>
