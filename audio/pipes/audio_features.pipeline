@@ -111,6 +111,10 @@
 		<input pin="audio-down" frame="0.1s"/>
 		<output pin="alpha_ratio"/>
 	</transformer>
+	<transformer create="PythonFeature" script="slope" syspath="..\scripts">
+		<input pin="audio-down" frame="0.1s"/>
+		<output pin="slope"/>
+	</transformer>
 	<!---->
 
 	<object create="EventMonitor:monitor" title="Events">

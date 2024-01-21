@@ -17,6 +17,7 @@ set DST=bin\
 %DST%wget.exe -q https://bootstrap.pypa.io/get-pip.py -O %DST%get-pip.py
 %DST%python %DST%get-pip.py
 %DST%Scripts\pip.exe install numpy
+%DST%Scripts\pip.exe install scipy
 %DST%Scripts\pip.exe install mediapipe
 %DST%Scripts\pip.exe install torch
 %DST%Scripts\pip.exe install multiprocess
