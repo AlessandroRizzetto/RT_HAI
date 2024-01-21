@@ -51,9 +51,15 @@
 		<output pin="audio-down"/>
 	</transformer>
 
-	<transformer create="PythonFilter" script="vad" syspath="..\scripts">
+	<transformer create="PythonFeature" script="vad" syspath="..\scripts">
 		<input pin="audio-down" frame="0.1s"/>
-		<output pin="python_vad"/>
+		<output pin="python-vad"/>
+	</transformer>
+	
+	<transformer create="PythonFilter" script="vad_filter" syspath="..\scripts">
+		<input pin="audio-down" frame="0.1s"/>
+		<listen address="vad@audio"/>
+		<output pin="vad-audio"/>
 	</transformer>
 
 	<!-- # Preprocessing with OpenSMILE
@@ -63,20 +69,20 @@
 	> MFCC: `OSMfccChain` (feature)
 	-->
 	<transformer create="OSPitchChain" option="..\options\pitch">
-		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
+		<input pin="vad-audio" frame="0.01s" delta="0.02s"/>
 		<output pin="audio-pitch"/>
 	</transformer>
 	<transformer create="OSEnergy">
-		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
+		<input pin="vad-audio" frame="0.01s" delta="0.02s"/>
 		<output pin="audio-energy"/>
 	</transformer>
 	<transformer create="OSIntensity" intensity="0" loudness="1">
-		<input pin="audio-down" frame="0.3s" />
+		<input pin="vad-audio" frame="0.3s" />
 		<output pin="audio-loudness" />
 	</transformer>
 	<gate open="$(audio:mffc)">
 		<transformer create="OSMfccChain" option="..\0options\mfcc">
-			<input pin="audio-down" frame="0.01s" delta="0.02s"/>
+			<input pin="vad-audio" frame="0.01s" delta="0.02s"/>
 			<output pin="audio-mfcc"/>
 		</transformer>
 	</gate>
@@ -92,11 +98,11 @@
 		24) harmonicity_autocorr 25) harmonicity_noise_to_harmonics_ratio 26) harmonicity_harmonics_to_noise_ratio:
 	-->
 	<transformer create="PraatVoiceReportT" option="..\options\audio_features" script="..\scripts\voicereport.praat" tmpwav="..\data\tmp\voicereport_t.wav" exe="..\..\bin\praatcon.exe">
-		<input pin="audio-down" frame="1.0s"/>
+		<input pin="vad-audio" frame="1.0s"/>
 		<output pin="praat_vr"/>
 	</transformer>
 	<consumer create="PraatVoiceReport" script="..\scripts\voicereport.praat" tmpwav="..\data\tmp\voicereport.wav" exe="..\..\bin\praatcon.exe" ename="vr" sname="praat">
-		<input pin="audio-down" frame="1.0s"/>		
+		<input pin="vad-audio" frame="1.0s"/>		
 	</consumer>
 	<!---->
 	
@@ -138,7 +144,7 @@
 		<input pin="audio-energy" frame="0.02s" />
 	</consumer>
 	<consumer create="SignalPainter:plota" title="VAD" size="10" type="2">
-		<input pin="python_vad" frame="0.1s" />
+		<input pin="vad-audio" frame="0.1s" />
 	</consumer>
 	<gate open="$(audio:mffc)">
 		<consumer create="SignalPainter:plot-mffc" size="10" title="MFCC" type="1">
@@ -165,9 +171,11 @@
 	</gate>
 	<gate open="$(audio:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="400,0,400,300">plot</area>
-			<area pos="400,400,600,300" nv="1" nh="4">plot-data*</area>
-			<!--<area pos="800,400,400,300">plot-mffc</area>-->
+			<area pos="0,0,400,300">plot</area>
+			<area pos="0,400,600,300" nv="1" nh="4">plot-data*</area>
+			<area pos="400,0,400,300">plota</area>
+			<area pos="600,400,400,300">plot-mffc</area>
+			<area pos="1100,0,400,800">monitor</area>
 		</object>
 	</gate>
 	<!---->

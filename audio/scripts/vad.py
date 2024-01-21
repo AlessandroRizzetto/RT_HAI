@@ -3,15 +3,9 @@ import torch
 torch.set_num_threads(1)
 
 def getOptions(opts, vars):
-    opts['vad_tresh'] = 0.7
+    opts['vad_tresh'] = 0.6
 
     vars['event_vad'] = False
-    vars['confidence'] = 0
-
-def getEventAddress(opts, vars):
-    return 'vad@audio'
-
-def getSampleDimensionOut(dim, opts, vars):
     vars['loaded'] = False
 
     try:
@@ -20,7 +14,8 @@ def getSampleDimensionOut(dim, opts, vars):
     except Exception as ex:
         print(ex)
 
-    return 1
+def getEventAddress(opts, vars):
+    return 'vad@audio'
 
 def getSampleTypeOut(type, types, opts, vars): 
     if type != types.FLOAT:  
@@ -50,7 +45,7 @@ def transform(info, sin, sout, sxtras, board, opts, vars):
         elif new_confidence < opts['vad_tresh'] and vars['event_vad']:
             vars['event_vad'] = False
             board.update(time_ms, 0, 'vad@audio', state=board.COMPLETED)
-        
+
 
 def load_model(opts, vars):
     model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
