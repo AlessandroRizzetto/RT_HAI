@@ -106,6 +106,12 @@
 	</consumer>
 	<!---->
 	
+	<!-- # Preprocessing with other tools-->
+	<transformer create="PythonFeature" script="alpha_ratio" syspath="..\scripts">
+		<input pin="audio-down" frame="0.1s"/>
+		<output pin="alpha_ratio"/>
+	</transformer>
+	<!---->
 
 	<object create="EventMonitor:monitor" title="Events">
 		<listen address="vad@audio" span="10000"/>
