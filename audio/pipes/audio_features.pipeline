@@ -108,15 +108,15 @@
 	
 	<!-- # Preprocessing with other tools-->
 	<transformer create="PythonFeature" script="alpha_ratio" syspath="..\scripts">
-		<input pin="audio-down" frame="0.1s"/>
+		<input pin="vad-audio" frame="0.1s"/>
 		<output pin="alpha-ratio"/>
 	</transformer>
 	<transformer create="PythonFeature" script="slope" syspath="..\scripts">
-		<input pin="audio-down" frame="0.1s"/>
+		<input pin="vad-audio" frame="0.1s"/>
 		<output pin="slope"/>
 	</transformer>
 	<transformer create="PythonFeature" script="spectral_flux" syspath="..\scripts">
-		<input pin="audio-down" frame="0.1s"/>
+		<input pin="vad-audio" frame="0.1s"/>
 		<output pin="spectral-flux"/>
 	</transformer>
 	<!---->

@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-from scipy.fft import fft
+import fft_tools as ft
 
 def getOptions(opts, vars):
    opts['eps'] = sys.float_info.epsilon
@@ -10,15 +10,12 @@ def transform(info, sin, sout, sxtras, board, opts, vars):
     npin = np.asarray(sin)#np.asmatrix(sin)
     
     if vars['last_fft_magnitude'] is None:
-        vars['last_fft_magnitude'] = fft_magnitude(npin)
+        vars['last_fft_magnitude'] = ft.fft_magnitude(npin)
         sout[0] = 0
     else:
-        tmp_fft = fft_magnitude(npin)
+        tmp_fft = ft.fft_magnitude(npin)
         sout[0] = spectral_flux(tmp_fft, vars['last_fft_magnitude'], opts['eps'])
         vars['last_fft_magnitude'] = tmp_fft
-
-def fft_magnitude(window):
-   return abs(fft(window))
 
 def spectral_flux(fft_magnitude, previous_fft_magnitude, eps):
     """
