@@ -115,6 +115,10 @@
 		<input pin="audio-down" frame="0.1s"/>
 		<output pin="slope"/>
 	</transformer>
+	<transformer create="PythonFeature" script="spectral_flux" syspath="..\scripts">
+		<input pin="audio-down" frame="0.1s"/>
+		<output pin="spectral-flux"/>
+	</transformer>
 	<!---->
 
 	<object create="EventMonitor:monitor" title="Events">
