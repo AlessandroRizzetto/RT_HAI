@@ -81,7 +81,7 @@
 		<output pin="loudness" />
 	</transformer>
 	<gate open="$(audio:mffc)">
-		<transformer create="OSMfccChain" option="..\0options\mfcc">
+		<transformer create="OSMfccChain" option="..\options\mfcc">
 			<input pin="vad-audio" frame="0.01s" delta="0.02s"/>
 			<output pin="mfcc"/>
 		</transformer>
@@ -161,6 +161,18 @@
 	<consumer create="SignalPainter:plot-data" size="10" title="ENERGY" type="4">
 		<input pin="energy" frame="0.02s" />
 	</consumer>
+	<consumer create="SignalPainter:plot-data" size="10" title="ALPHA RATIO" type="5">
+		<input pin="alpha-ratio" frame="0.1s" />
+	</consumer>
+	<consumer create="SignalPainter:plot-data" size="10" title="SLOPE" type="4">
+		<input pin="slope" frame="0.1s" />
+	</consumer>
+	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL FLUX" type="5">
+		<input pin="spectral-flux" frame="0.1s" />
+	</consumer>
+	<consumer create="SignalPainter:plot-data" size="10" title="HAMMARBERG INDEX" type="4">
+		<input pin="hammarberg-index" frame="6s" delta="2.9s" />
+	</consumer>
 	<consumer create="SignalPainter:plota" title="VAD" size="10" type="2">
 		<input pin="vad-audio" frame="0.1s" />
 	</consumer>
@@ -182,7 +194,7 @@
 	<gate close="$(audio:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
 			<area pos="0,0,400,300">plot</area>
-			<area pos="0,400,600,300" nv="1" nh="5">plot-data*</area>
+			<area pos="0,300,600,600" nv="2" nh="5">plot-data*</area>
 			<area pos="400,0,400,300">plota</area>
 			<area pos="900,0,600,800">monitor</area>
 		</object>
@@ -190,9 +202,9 @@
 	<gate open="$(audio:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
 			<area pos="0,0,400,300">plot</area>
-			<area pos="0,400,600,300" nv="1" nh="4">plot-data*</area>
+			<area pos="0,300,600,600" nv="2" nh="5">plot-data*</area>
 			<area pos="400,0,400,300">plota</area>
-			<area pos="600,400,400,300">plot-mffc</area>
+			<area pos="600,300,400,300">plot-mffc</area>
 			<area pos="1100,0,400,800">monitor</area>
 		</object>
 	</gate>
