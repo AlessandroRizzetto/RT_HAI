@@ -46,7 +46,7 @@
 	</gate>
 	<!---->
 
-	<transformer create="DownSample" keep="4">
+	<transformer create="DownSample" keep="3">
 		<input pin="audio" frame="9"/>
 		<output pin="audio-down"/>
 	</transformer>
@@ -118,6 +118,10 @@
 	<transformer create="PythonFeature" script="spectral_flux" syspath="..\scripts">
 		<input pin="vad-audio" frame="0.1s"/>
 		<output pin="spectral-flux"/>
+	</transformer>
+	<transformer create="PythonFeature" script="hi_feature" syspath="..\scripts">
+		<input pin="audio-down" frame="6s" delta="2.9s"/>
+		<output pin="hammarberg-index"/>
 	</transformer>
 	<!---->
 
