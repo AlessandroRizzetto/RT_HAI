@@ -111,9 +111,9 @@
 		<input pin="vad-audio" frame="0.1s"/>
 		<output pin="alpha-ratio"/>
 	</transformer>
-	<transformer create="PythonFeature" script="slope" syspath="..\scripts">
+	<transformer create="PythonFeature" script="spectral_slope" syspath="..\scripts">
 		<input pin="vad-audio" frame="0.1s"/>
-		<output pin="slope"/>
+		<output pin="spectral_slope"/>
 	</transformer>
 	<transformer create="PythonFeature" script="spectral_flux" syspath="..\scripts">
 		<input pin="vad-audio" frame="0.1s"/>
@@ -164,8 +164,8 @@
 	<consumer create="SignalPainter:plot-data" size="10" title="ALPHA RATIO" type="5">
 		<input pin="alpha-ratio" frame="0.1s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="SLOPE" type="4">
-		<input pin="slope" frame="0.1s" />
+	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL SLOPE" type="4">
+		<input pin="spectral_slope" frame="0.1s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL FLUX" type="5">
 		<input pin="spectral-flux" frame="0.1s" />
