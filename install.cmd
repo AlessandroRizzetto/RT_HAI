@@ -16,12 +16,14 @@ set DST=bin\
 %DST%wget.exe -q %SRC%python%PYTHON_VER%._pth -O %DST%python%PYTHON_VER%._pth
 %DST%wget.exe -q https://bootstrap.pypa.io/get-pip.py -O %DST%get-pip.py
 %DST%python %DST%get-pip.py
+%DST%Scripts\pip.exe install iso639
 %DST%Scripts\pip.exe install numpy
 %DST%Scripts\pip.exe install scipy
 %DST%Scripts\pip.exe install librosa
 %DST%Scripts\pip.exe install mediapipe
 %DST%Scripts\pip.exe install torch
 %DST%Scripts\pip.exe install torchaudio
+%DST%Scripts\pip.exe install opensmile
 %DST%Scripts\pip.exe install multiprocess
 %DST%wget.exe %SRC%xmlpipe.exe -O %DST%xmlpipe.exe 
 %DST%wget.exe %SRC%xmlchain.exe -O %DST%xmlchain.exe 

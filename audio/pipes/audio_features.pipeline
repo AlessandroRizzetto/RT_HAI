@@ -66,6 +66,10 @@
 	> Pitch: `OSPitchShs` (filter)
 	> Energy: `OSEnergy` (feature)
 	> Loudness: `OSIntensity` (feature)
+	> Alpha Ratio: `PythonFeature` (feature)
+	> Hammarberg Index: `PythonFeature` (feature)
+	> Spectral Flux: `PythonFeature` (feature)
+	> Spectral Slope 0-500: `PythonFeature` (feature)
 	> MFCC: `OSMfccChain` (feature)
 	-->
 	<transformer create="OSPitchChain" option="..\options\pitch">
@@ -79,6 +83,22 @@
 	<transformer create="OSIntensity" intensity="0" loudness="1">
 		<input pin="vad-audio" frame="0.3s" />
 		<output pin="loudness" />
+	</transformer>
+	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=alphaRatioV_sma3nz_amean">
+		<input pin="audio-down" frame="1s" delta="0.5s"/>
+		<output pin="alpha-ratio"/>
+	</transformer>
+	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=hammarbergIndexV_sma3nz_amean">
+		<input pin="audio-down" frame="1s" delta="0.5s"/>
+		<output channel="hammarberg-index" pin="hammarberg-index"/>
+	</transformer>
+	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=spectralFluxV_sma3nz_amean">
+		<input pin="audio-down" frame="1s" delta="0.5s"/>
+		<output channel="spectral-flux" pin="spectral-flux"/>
+	</transformer>
+	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=slopeV0-500_sma3nz_amean">
+		<input pin="audio-down" frame="1s" delta="0.5s"/>
+		<output channel="spectral-slope" pin="spectral-slope"/>
 	</transformer>
 	<gate open="$(audio:mffc)">
 		<transformer create="OSMfccChain" option="..\options\mfcc">
@@ -104,25 +124,6 @@
 	<consumer create="PraatVoiceReport" script="..\scripts\voicereport.praat" tmpwav="..\data\tmp\voicereport.wav" exe="..\..\bin\praatcon.exe" ename="vr" sname="praat">
 		<input pin="vad-audio" frame="1.0s"/>		
 	</consumer>
-	<!---->
-	
-	<!-- # Preprocessing with other tools-->
-	<transformer create="PythonFeature" script="alpha_ratio" syspath="..\scripts">
-		<input pin="vad-audio" frame="0.1s"/>
-		<output pin="alpha-ratio"/>
-	</transformer>
-	<transformer create="PythonFeature" script="spectral_slope" syspath="..\scripts">
-		<input pin="vad-audio" frame="0.1s"/>
-		<output pin="spectral_slope"/>
-	</transformer>
-	<transformer create="PythonFeature" script="spectral_flux" syspath="..\scripts">
-		<input pin="vad-audio" frame="0.1s"/>
-		<output pin="spectral-flux"/>
-	</transformer>
-	<transformer create="PythonFeature" script="hi_feature" syspath="..\scripts">
-		<input pin="audio-down" frame="6s" delta="2.9s"/>
-		<output pin="hammarberg-index"/>
-	</transformer>
 	<!---->
 
 	<object create="EventMonitor:monitor" title="Events">
@@ -161,17 +162,17 @@
 	<consumer create="SignalPainter:plot-data" size="10" title="ENERGY" type="4">
 		<input pin="energy" frame="0.02s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="ALPHA RATIO" type="5">
-		<input pin="alpha-ratio" frame="0.1s" />
+	<consumer create="SignalPainter:plot-data" size="10" title="ALPHA RATIO" type="4">
+		<input pin="alpha-ratio" frame="1s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL SLOPE" type="4">
-		<input pin="spectral_slope" frame="0.1s" />
+		<input pin="spectral-slope" frame="1s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL FLUX" type="5">
-		<input pin="spectral-flux" frame="0.1s" />
+		<input pin="spectral-flux" frame="1s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="HAMMARBERG INDEX" type="4">
-		<input pin="hammarberg-index" frame="6s" delta="2.9s" />
+		<input pin="hammarberg-index" frame="1s" />
 	</consumer>
 	<consumer create="SignalPainter:plota" title="VAD" size="10" type="2">
 		<input pin="vad-audio" frame="0.1s" />
