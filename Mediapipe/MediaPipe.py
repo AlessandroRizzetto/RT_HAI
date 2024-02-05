@@ -551,8 +551,8 @@ def mediaPipe(client_socket, ssi_is_connected):
                         # se non esiste creo un file csv con i nomi delle colonne
                         if not os.path.exists('dataTable.csv'):
                             with open('dataTable.csv', 'a+') as f:
-                                writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                                writer.writerow([f'{name}_x' for name in landmarks_name] + [f'{name}_y' for name in landmarks_name] + [f'{name}_z' for name in landmarks_name] + [f'{name}_x_v' for name in landmarks_name] + [f'{name}_y_v' for name in landmarks_name] + [f'{name}_z_v' for name in landmarks_name] 
+                                writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
+                                writer.writerow(['class'] + [f'{name}_x' for name in landmarks_name] + [f'{name}_y' for name in landmarks_name] + [f'{name}_z' for name in landmarks_name] + [f'{name}_x_v' for name in landmarks_name] + [f'{name}_y_v' for name in landmarks_name] + [f'{name}_z_v' for name in landmarks_name] 
                                                 + [f'kinetic_Energy_{name}' for name in landmarks_name] + [f'{name}_acceleration' for name in landmarks_name] + [f'{name}_visibility' for name in landmarks_name] + ['crouch', 'hands_distance', 'hands_visibility'
                                                                                                                                                                                                                      # , 'body_direction', 'head_direction' TO DO: NOT WORKING IN OFFLINE MODE
                                                                                                                                                                                                                       ] )
@@ -564,7 +564,7 @@ def mediaPipe(client_socket, ssi_is_connected):
                                                                                                                       ] ))
                         ai_data.insert(0, "CLASSE") # to change with the class of the user !!!
                         with open('dataTable.csv', 'a') as f:
-                            writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                            writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
                             writer.writerow(ai_data)
                
                 if is_online:
