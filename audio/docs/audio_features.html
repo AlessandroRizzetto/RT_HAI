@@ -144,11 +144,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
                 <li><code>audio:live:mic=true</code>: input from a microphone</li>
                 <li><code>audio:live:mic=false</code>: output of the soundcard
                   (make sure to set the output format of your soundcard to
-                  <code>16 bit</code> and <code>48000 Hz</code>)</li>
+                  <code>16 bit</code> and <code>48000 Hz</code>). Beware, the
+                  when the file ends, it will start again from the beginning.</li>
               </ul>
               <li><code>audio:live=false</code>: input from wav file
                 (<code>mono</code> and sampled at <code>48000 Hz</code>)</p>
                 <p></li>
+              <ul>
+                <li><code>audio:file</code>: path to the wav file</li>
+              </ul>
             </ul>
             <p><img
             src="https://raw.githubusercontent.com/hcmlab/vadnet/master/pics/loopback.png" /></p>

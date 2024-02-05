@@ -20,7 +20,8 @@
 		- `audio:live:mic=true`: input from a microphone
 		- `audio:live:mic=false`: output of the soundcard (make sure to set the output format of your
 	soundcard to `16 bit` and `48000 Hz`)
-	- `audio:live=false`: input from wav file (`mono` and sampled at `48000 Hz`)
+	- `audio:live=false`: input from wav file (`mono` and sampled at `48000 Hz`). Beware, the when the file ends, it will start again from the beginning.
+		- `audio:file`: path to the wav file
 
 	![](https://raw.githubusercontent.com/hcmlab/vadnet/master/pics/loopback.png)
 	
@@ -42,7 +43,7 @@
 	</gate>
 
 	<gate close="$(audio:live)">
-		<sensor create="WavReader:reader" path="..\data\audio.wav" loop="true">
+		<sensor create="WavReader:reader" path="$(audio:file)" loop="true">
 			<output channel="audio" pin="audio" size="2.0s" />
 		</sensor>
 	</gate>
