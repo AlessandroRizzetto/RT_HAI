@@ -11,15 +11,18 @@
 		<load name="opensmile" />
 	</register>
 
-	<!-- # Live input
+	<!-- # Audio input
 
-	`audio:live=true`:
-	> `audio:live:mic=true`: input from a microphone
-	> `audio:live:mic=false`: output of the soundcard (make sure to set the output format of your
+	Here in this section we define the audio input. The audio input can be either live from a microphone or from a file.
+
+	To set the audio source use the config variable `audio:live` and `audio:live:mic` in this ways:
+	- `audio:live=true`:
+		- `audio:live:mic=true`: input from a microphone
+		- `audio:live:mic=false`: output of the soundcard (make sure to set the output format of your
 	soundcard to `16 bit` and `48000 Hz`)
-	`audio:live=false`: input from file (`mono` and sampled at `48000 Hz`)
+	- `audio:live=false`: input from wav file (`mono` and sampled at `48000 Hz`)
 
-	![](https://raw.githubusercontent.com/hcmlab/vadnet/master/pics/loopback.png)	
+	![](https://raw.githubusercontent.com/hcmlab/vadnet/master/pics/loopback.png)
 	
 	-->
 	<gate open="$(audio:live)">
@@ -45,6 +48,11 @@
 	</gate>
 	<!---->
 
+	<!-- # Downsample and VAD
+	The audio input is downsampled to `16000 Hz` and the VAD is applied to the downsampled signal.
+	The VAD is implemented in Python and is based on the `silero_vad` library. The VAD is used to detect speech segments in the audio signal.
+	The VAD output is used to filter the audio signal and to extract features only from the speech segments (0 values otherwise).
+	-->
 	<transformer create="DownSample" keep="3">
 		<input pin="audio" frame="9"/>
 		<output pin="audio-down"/>
@@ -60,18 +68,22 @@
 		<listen address="vad@audio"/>
 		<output pin="vad-audio"/>
 	</transformer>
+	<!---->
 
 	<!-- # Preprocessing with OpenSMILE
-	> Pitch: `OSPitchShs` (filter)
-	> Energy: `OSEnergy` (feature)
-	> Loudness: `OSIntensity` (feature)
-	> Jitter: `PythonFeature` (feature)
-	> Shimmer: `PythonFeature` (feature)
-	> Alpha Ratio: `PythonFeature` (feature)
-	> Hammarberg Index: `PythonFeature` (feature)
-	> Spectral Flux: `PythonFeature` (feature)
-	> Spectral Slope 0-500: `PythonFeature` (feature)
-	> MFCC: `OSMfccChain` (feature)
+	
+	Here we use the OpenSMILE library to extract features from the audio signal.
+	We extract the following features:
+	- Pitch: `OSPitchShs` (filter)
+	- Energy: `OSEnergy` (feature)
+	- Loudness: `OSIntensity` (feature)
+	- Jitter: `PythonFeature` (feature)
+	- Shimmer: `PythonFeature` (feature)
+	- Alpha Ratio: `PythonFeature` (feature)
+	- Hammarberg Index: `PythonFeature` (feature)
+	- Spectral Flux: `PythonFeature` (feature)
+	- Spectral Slope 0-500: `PythonFeature` (feature)
+	- MFCC: `OSMfccChain` (feature, optional if `features:mffc=true`)
 	-->
 	<transformer create="OSPitchChain" option="..\options\pitch">
 		<input pin="vad-audio" frame="0.01s" delta="0.02s"/>
@@ -109,7 +121,7 @@
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
 		<output channel="spectral-slope" pin="spectral-slope"/>
 	</transformer>
-	<gate open="$(audio:mffc)">
+	<gate open="$(features:mffc)">
 		<transformer create="OSMfccChain" option="..\options\mfcc">
 			<input pin="vad-audio" frame="0.01s" delta="0.02s"/>
 			<output pin="mfcc"/>
@@ -119,6 +131,7 @@
 	<object create="EventMonitor:monitor" title="Events">
 		<listen address="vad@audio" span="10000"/>
 	</object>
+	<!---->
 
 	<!-- # Playback and Visualization
 	
@@ -163,13 +176,13 @@
 	<consumer create="SignalPainter:plota" title="VAD" size="10" type="2">
 		<input pin="vad-audio" frame="0.1s" />
 	</consumer>
-	<gate open="$(audio:mffc)">
+	<gate open="$(features:mffc)">
 		<consumer create="SignalPainter:plot-mffc" size="10" title="MFCC" type="1">
 			<input pin="mfcc" frame="0.03s" />
 		</consumer>
 	</gate>
 
-	<gate close="$(audio:mffc)">
+	<gate close="$(features:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
 			<area pos="0,0,400,300">plot</area>
 			<area pos="0,300,600,600" nv="2" nh="5">plot-data*</area>
@@ -177,7 +190,7 @@
 			<area pos="900,0,600,800">monitor</area>
 		</object>
 	</gate>
-	<gate open="$(audio:mffc)">
+	<gate open="$(features:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
 			<area pos="0,0,400,300">plot</area>
 			<area pos="0,300,600,600" nv="2" nh="5">plot-data*</area>
