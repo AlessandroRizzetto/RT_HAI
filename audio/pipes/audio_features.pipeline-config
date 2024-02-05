@@ -1,3 +1,7 @@
 audio:live = false     # $(bool) use live input (otherwise read from file)
 audio:live:mic = false  # $(bool) if live input is selected use microphone (otherwise use soundcard)
 audio:mffc = true
+
+user:class = CLASSE
+
+file:save = false

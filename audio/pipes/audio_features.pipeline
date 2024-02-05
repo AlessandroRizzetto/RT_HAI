@@ -78,11 +78,11 @@
 		<output pin="pitch"/>
 	</transformer>
 	<transformer create="OSEnergy">
-		<input pin="vad-audio" frame="0.01s" delta="0.02s"/>
+		<input pin="vad-audio" frame="0.3s" delta="0.15s"/>
 		<output pin="energy"/>
 	</transformer>
 	<transformer create="OSIntensity" intensity="0" loudness="1">
-		<input pin="vad-audio" frame="0.3s" />
+		<input pin="vad-audio" frame="0.3s" delta="0.15s" />
 		<output pin="loudness" />
 	</transformer>
 	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=jitterLocal_sma3nz_amean">
@@ -134,10 +134,10 @@
 		<input pin="audio" frame="0.3s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" title="LOUDNESS" size="10.0" type="5" colormap="3">
-		<input pin="loudness" frame="0.3s" />
+		<input pin="loudness" frame="0.3s" delta="0.15s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="PITCH" type="5">
-		<input pin="pitch" frame="0.02s" />
+		<input pin="pitch" frame="0.01s" delta="0.02s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" title="JITTER" type="5">
 		<input pin="jitter" frame="1s" delta="0.5s" />
@@ -146,19 +146,19 @@
 		<input pin="shimmer" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="ENERGY" type="4">
-		<input pin="energy" frame="0.02s" />
+		<input pin="energy" frame="0.3s" delta="0.15s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="ALPHA RATIO" type="4">
-		<input pin="alpha-ratio" frame="1s" />
+		<input pin="alpha-ratio" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL SLOPE" type="4">
-		<input pin="spectral-slope" frame="1s" />
+		<input pin="spectral-slope" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL FLUX" type="5">
-		<input pin="spectral-flux" frame="1s" />
+		<input pin="spectral-flux" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="HAMMARBERG INDEX" type="4">
-		<input pin="hammarberg-index" frame="1s" />
+		<input pin="hammarberg-index" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plota" title="VAD" size="10" type="2">
 		<input pin="vad-audio" frame="0.1s" />
@@ -168,9 +168,7 @@
 			<input pin="mfcc" frame="0.03s" />
 		</consumer>
 	</gate>
-	<!---->
-	
-	<!-- decoration -->
+
 	<gate close="$(audio:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
 			<area pos="0,0,400,300">plot</area>
@@ -187,6 +185,28 @@
 			<area pos="600,300,400,300">plot-mffc</area>
 			<area pos="1100,0,400,800">monitor</area>
 		</object>
+	</gate>
+	<!---->
+
+	<!-- # Storage of features
+	
+	Finally, if specified by the config variable `file:save`, the features are stored in a file.
+	
+	-->
+	<gate open="$(file:save)">
+		<consumer create="PythonConsumer" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class)">
+			<input pin="pitch" frame="1s" delta="0.15s" />
+			<xinput size="7">
+				<input pin="loudness" />
+				<input pin="energy" />
+				<input pin="jitter" />
+				<input pin="shimmer" />
+				<input pin="alpha-ratio" />
+				<input pin="hammarberg-index" />
+				<input pin="spectral-flux" />
+				<input pin="spectral-slope" />
+			</xinput>
+		</consumer>
 	</gate>
 	<!---->
 
