@@ -204,6 +204,7 @@
 	<!-- # Storage of features
 	
 	Finally, if specified by the config variable `file:save`, the features are stored in a file.
+	The config variable `user:class` is used to specify the class/identifier of the user.
 	
 	-->
 	<gate open="$(file:save)">
