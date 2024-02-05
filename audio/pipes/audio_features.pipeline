@@ -206,6 +206,7 @@
 	
 	Finally, if specified by the config variable `file:save`, the features are stored in a file.
 	The config variable `user:class` is used to specify the class/identifier of the user.
+	All values of features with the lower framerate are saved. Instead, features with higher framerate are first filtered with savgolf_filter and then averaged to obtain values in correspondence of the ones just mentioned.
 	
 	-->
 	<gate open="$(file:save)">

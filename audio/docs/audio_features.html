@@ -343,6 +343,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
             file.</p>
             <p>The config variable <code>user:class</code> is 
             used to specify the class/identifier of the user.</p>
+            <p>All values of features with the lower framerate are saved.
+            Instead, features with higher framerate are first filtered
+            with savgolf_filter and then averaged to obtain values
+            in correspondence of the ones just mentioned.</p>
             <div class="sourceCode" id="cb5"><pre
             class="sourceCode xml"><code class="sourceCode xml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">gate</span><span class="ot"> open=</span><span class="st">&quot;$(file:save)&quot;</span>&gt;</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">consumer</span><span class="ot"> create=</span><span class="st">&quot;PythonConsumer&quot;</span><span class="ot"> script=</span><span class="st">&quot;file_storage&quot;</span><span class="ot"> syspath=</span><span class="st">&quot;..\scripts&quot;</span><span class="ot"> optsstr=</span><span class="st">&quot;user_class=$(user:class)&quot;</span>&gt;</span>
