@@ -204,13 +204,13 @@
 
 	<!-- # Storage of features
 	
-	Finally, if specified by the config variable `file:save`, the features are stored in a file.
+	Finally, if specified by the config variable `output:file:save` (eventually specifying also if you want a new file with `output:file:new`), the features are stored in a file (path specified in `output:file:path`).
 	The config variable `user:class` is used to specify the class/identifier of the user.
 	All values of features with the lower framerate are saved. Instead, features with higher framerate are first filtered with savgolf_filter and then averaged to obtain values in correspondence of the ones just mentioned.
 	
 	-->
-	<gate open="$(file:save)">
-		<consumer create="PythonConsumer" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class)">
+	<gate open="$(output:file:save)">
+		<consumer create="PythonConsumer" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class);file_path=$(output:file:path);new_file=$(output:file:new)">
 			<input pin="pitch" frame="1s" delta="0.15s" />
 			<xinput size="7">
 				<input pin="loudness" />

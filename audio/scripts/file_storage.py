@@ -4,16 +4,17 @@ import numpy as np
 from scipy.signal import savgol_filter
 
 def getOptions(opts,vars):
+    opts['new_file'] = 'false'
     opts['file_path'] = '../data/dataTable.csv'
     opts['features'] = ['loudness', 'pitch', 'jitter', 'shimmer', 'energy', 'alpha-ratio', 'hammarberg-index', 'spectral-flux', 'spectral-slope']
     opts['user_class'] = 'CLASSE'
     opts['polyorder'] = 2
 
 def consume_enter(sins, board, opts, vars):
-    exists = os.path.exists('dataTable.csv')
-    vars['f'] = open(opts['file_path'], 'w') if not exists else open(opts['file_path'], 'a')
+    new_file = os.path.exists(opts['file_path']) and opts['new_file'] == 'true'
+    vars['f'] = open(opts['file_path'], 'w') if new_file else open(opts['file_path'], 'a')
     vars['writer'] = csv.writer(vars['f'], delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
-    if not exists:
+    if new_file:
         first_row = ['class']
         first_row.extend(opts['features'])
         vars['writer'].writerow(first_row)
