@@ -14,17 +14,17 @@
 	The VAD is implemented in Python and is based on the `silero_vad` library. The VAD is used to detect speech segments in the audio signal.
 	The VAD output is used to filter the audio signal and to extract features only from the speech segments (0 values otherwise).
 	-->
-	<transformer create="DownSample" keep="3">
+	<transformer create="DownSample:audio-down" keep="3">
 		<input pin="audio" frame="9"/>
-		<output pin="audio-down"/>
+		<output channel="audio-down" pin="audio-down"/>
 	</transformer>
 
-	<transformer create="PythonFeature" script="vad" syspath="..\scripts">
+	<transformer create="PythonFeature:python-vad" script="vad" syspath="..\scripts">
 		<input pin="audio-down" frame="0.1s"/>
 		<output pin="python-vad"/>
 	</transformer>
 	
-	<transformer create="PythonFilter" script="vad_filter" syspath="..\scripts">
+	<transformer create="PythonFilter:vad-audio" script="vad_filter" syspath="..\scripts">
 		<input pin="audio-down" frame="0.1s"/>
 		<listen address="vad@audio"/>
 		<output pin="vad-audio"/>

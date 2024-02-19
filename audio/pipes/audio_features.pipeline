@@ -26,44 +26,44 @@
 	- Spectral Slope 0-500: `PythonFeature` (feature)
 	- MFCC: `OSMfccChain` (feature, optional if `features:mffc=true`)
 	-->
-	<transformer create="OSEnergy">
+	<transformer create="OSEnergy:energy">
 		<input pin="vad-audio" frame="0.3s" delta="0.15s"/>
 		<output pin="energy"/>
 	</transformer>
-	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=loudness_sma3_amean">
+	<transformer create="PythonFeature:loudness" script="opensmile_manager" syspath="..\scripts" optsstr="feature=loudness_sma3_amean">
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
 		<output channel="loudness" pin="loudness"/>
 	</transformer>
-	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=F0semitoneFrom27.5Hz_sma3nz_amean">
+	<transformer create="PythonFeature:pitch" script="opensmile_manager" syspath="..\scripts" optsstr="feature=F0semitoneFrom27.5Hz_sma3nz_amean">
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
 		<output channel="pitch" pin="pitch"/>
 	</transformer>
-	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=jitterLocal_sma3nz_amean">
+	<transformer create="PythonFeature:jitter" script="opensmile_manager" syspath="..\scripts" optsstr="feature=jitterLocal_sma3nz_amean">
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
 		<output channel="jitter" pin="jitter"/>
 	</transformer>
-	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=shimmerLocaldB_sma3nz_amean">
+	<transformer create="PythonFeature:shimmer" script="opensmile_manager" syspath="..\scripts" optsstr="feature=shimmerLocaldB_sma3nz_amean">
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
 		<output channel="shimmer" pin="shimmer"/>
 	</transformer>
-	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=alphaRatioV_sma3nz_amean">
+	<transformer create="PythonFeature:alpha-ratio" script="opensmile_manager" syspath="..\scripts" optsstr="feature=alphaRatioV_sma3nz_amean">
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
-		<output pin="alpha-ratio"/>
+		<output channel="alpha-ratio" pin="alpha-ratio"/>
 	</transformer>
-	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=hammarbergIndexV_sma3nz_amean">
+	<transformer create="PythonFeature:hammarberg-index" script="opensmile_manager" syspath="..\scripts" optsstr="feature=hammarbergIndexV_sma3nz_amean">
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
 		<output channel="hammarberg-index" pin="hammarberg-index"/>
 	</transformer>
-	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=spectralFluxV_sma3nz_amean">
+	<transformer create="PythonFeature:spectral-flux" script="opensmile_manager" syspath="..\scripts" optsstr="feature=spectralFluxV_sma3nz_amean">
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
 		<output channel="spectral-flux" pin="spectral-flux"/>
 	</transformer>
-	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=slopeV0-500_sma3nz_amean">
+	<transformer create="PythonFeature:spectral-slope" script="opensmile_manager" syspath="..\scripts" optsstr="feature=slopeV0-500_sma3nz_amean">
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
 		<output channel="spectral-slope" pin="spectral-slope"/>
 	</transformer>
 	<gate open="$(features:mffc)">
-		<transformer create="OSMfccChain" option="..\options\mfcc">
+		<transformer create="OSMfccChain:mfcc" option="..\options\mfcc">
 			<input pin="vad-audio" frame="0.01s" delta="0.02s"/>
 			<output pin="mfcc"/>
 		</transformer>
@@ -80,7 +80,7 @@
 	
 	-->
 	<gate close="$(audio:live)">
-		<consumer create="AudioPlayer" option="..\options\aplayer">
+		<consumer create="AudioPlayer:audio" option="..\options\aplayer">
 			<input pin="audio" frame="0.1s" />
 		</consumer>
 	</gate>

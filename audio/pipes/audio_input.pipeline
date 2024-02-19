@@ -23,13 +23,13 @@
 	-->
 	<gate open="$(audio:live)">
 		<gate open="$(audio:live:mic)">
-			<sensor create="Audio" option="..\options\microphone" sr="48000" scale="true"
+			<sensor create="Audio:microphone" option="..\options\microphone" sr="48000" scale="true"
 				blockInSamples="416">
 				<output channel="audio" pin="audio" />
 			</sensor>
 		</gate>
 		<gate close="$(audio:live:mic)">
-			<sensor create="AudioLoopBack" option="..\options\loopback" scale="true">
+			<sensor create="AudioLoopBack:loopback" option="..\options\loopback" scale="true">
 				<output channel="audio" pin="audio">
 					<transformer create="Selector" indices="0" />
 				</output>
@@ -38,7 +38,7 @@
 	</gate>
 
 	<gate close="$(audio:live)">
-		<sensor create="WavReader:reader" path="$(audio:file)" loop="true">
+		<sensor create="WavReader:file" path="$(audio:file)" loop="true">
 			<output channel="audio" pin="audio" size="2.0s" />
 		</sensor>
 	</gate>
