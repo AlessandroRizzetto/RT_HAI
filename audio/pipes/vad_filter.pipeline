@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<pipeline ssi-v="1">
+
+	<register>
+		<load name="signal" />
+		<load name="python310" />
+	</register>
+
+	<include path=".\audio_input.pipeline"/>
+
+	<!-- # Downsample and VAD
+	The audio input is downsampled to `16000 Hz` and the VAD is applied to the downsampled signal.
+	The VAD is implemented in Python and is based on the `silero_vad` library. The VAD is used to detect speech segments in the audio signal.
+	The VAD output is used to filter the audio signal and to extract features only from the speech segments (0 values otherwise).
+	-->
+	<transformer create="DownSample" keep="3">
+		<input pin="audio" frame="9"/>
+		<output pin="audio-down"/>
+	</transformer>
+
+	<transformer create="PythonFeature" script="vad" syspath="..\scripts">
+		<input pin="audio-down" frame="0.1s"/>
+		<output pin="python-vad"/>
+	</transformer>
+	
+	<transformer create="PythonFilter" script="vad_filter" syspath="..\scripts">
+		<input pin="audio-down" frame="0.1s"/>
+		<listen address="vad@audio"/>
+		<output pin="vad-audio"/>
+	</transformer>
+	<!---->
+
+</pipeline>
