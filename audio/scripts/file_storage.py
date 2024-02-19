@@ -6,7 +6,7 @@ from scipy.signal import savgol_filter
 def getOptions(opts,vars):
     opts['new_file'] = 'false'
     opts['file_path'] = '../data/dataTable.csv'
-    opts['features'] = ['loudness', 'pitch', 'jitter', 'shimmer', 'energy', 'alpha-ratio', 'hammarberg-index', 'spectral-flux', 'spectral-slope']
+    opts['features'] = ['loudness', 'pitch', 'energy', 'jitter', 'shimmer', 'alpha-ratio', 'hammarberg-index', 'spectral-flux', 'spectral-slope']
     opts['user_class'] = 'CLASSE'
     opts['polyorder'] = 2
 

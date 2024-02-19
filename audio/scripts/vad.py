@@ -3,7 +3,7 @@ import torch
 torch.set_num_threads(1)
 
 def getOptions(opts, vars):
-    opts['vad_tresh'] = 0.6
+    opts['vad_tresh'] = 0.3
 
     vars['event_vad'] = False
     vars['loaded'] = False

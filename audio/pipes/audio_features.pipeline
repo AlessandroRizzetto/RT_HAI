@@ -75,9 +75,9 @@
 	
 	Here we use the OpenSMILE library to extract features from the audio signal.
 	We extract the following features:
-	- Pitch: `OSPitchShs` (filter)
+	- Pitch: `PythonFeature` (filter)
 	- Energy: `OSEnergy` (feature)
-	- Loudness: `OSIntensity` (feature)
+	- Loudness: `PythonFeature` (feature)
 	- Jitter: `PythonFeature` (feature)
 	- Shimmer: `PythonFeature` (feature)
 	- Alpha Ratio: `PythonFeature` (feature)
@@ -86,17 +86,17 @@
 	- Spectral Slope 0-500: `PythonFeature` (feature)
 	- MFCC: `OSMfccChain` (feature, optional if `features:mffc=true`)
 	-->
-	<transformer create="OSPitchChain" option="..\options\pitch">
-		<input pin="vad-audio" frame="0.01s" delta="0.02s"/>
-		<output pin="pitch"/>
-	</transformer>
 	<transformer create="OSEnergy">
 		<input pin="vad-audio" frame="0.3s" delta="0.15s"/>
 		<output pin="energy"/>
 	</transformer>
-	<transformer create="OSIntensity" intensity="0" loudness="1">
-		<input pin="vad-audio" frame="0.3s" delta="0.15s" />
-		<output pin="loudness" />
+	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=loudness_sma3_amean">
+		<input pin="audio-down" frame="1s" delta="0.5s"/>
+		<output channel="loudness" pin="loudness"/>
+	</transformer>
+	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=F0semitoneFrom27.5Hz_sma3nz_amean">
+		<input pin="audio-down" frame="1s" delta="0.5s"/>
+		<output channel="pitch" pin="pitch"/>
 	</transformer>
 	<transformer create="PythonFeature" script="opensmile_manager" syspath="..\scripts" optsstr="feature=jitterLocal_sma3nz_amean">
 		<input pin="audio-down" frame="1s" delta="0.5s"/>
@@ -148,10 +148,13 @@
 		<input pin="audio" frame="0.3s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" title="LOUDNESS" size="10.0" type="5" colormap="3">
-		<input pin="loudness" frame="0.3s" delta="0.15s" />
+		<input pin="loudness" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="PITCH" type="5">
-		<input pin="pitch" frame="0.01s" delta="0.02s" />
+	<consumer create="SignalPainter:plot-data" title="PITCH" type="5">
+		<input pin="pitch" frame="1s" delta="0.5s" />
+	</consumer>
+	<consumer create="SignalPainter:plot-data" size="10" title="ENERGY" type="4">
+		<input pin="energy" frame="0.3s" delta="0.15s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" title="JITTER" type="5">
 		<input pin="jitter" frame="1s" delta="0.5s" />
@@ -159,20 +162,17 @@
 	<consumer create="SignalPainter:plot-data" title="SHIMMER" type="5">
 		<input pin="shimmer" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="ENERGY" type="4">
-		<input pin="energy" frame="0.3s" delta="0.15s" />
-	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="ALPHA RATIO" type="4">
 		<input pin="alpha-ratio" frame="1s" delta="0.5s" />
+	</consumer>
+	<consumer create="SignalPainter:plot-data" size="10" title="HAMMARBERG INDEX" type="4">
+		<input pin="hammarberg-index" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL SLOPE" type="4">
 		<input pin="spectral-slope" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL FLUX" type="5">
 		<input pin="spectral-flux" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="HAMMARBERG INDEX" type="4">
-		<input pin="hammarberg-index" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plota" title="VAD" size="10" type="2">
 		<input pin="vad-audio" frame="0.1s" />
@@ -211,9 +211,9 @@
 	-->
 	<gate open="$(output:file:save)">
 		<consumer create="PythonConsumer" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class);file_path=$(output:file:path);new_file=$(output:file:new)">
-			<input pin="pitch" frame="1s" delta="0.15s" />
+			<input pin="loudness" frame="1s" delta="0.15s" />
 			<xinput size="7">
-				<input pin="loudness" />
+				<input pin="pitch" />
 				<input pin="energy" />
 				<input pin="jitter" />
 				<input pin="shimmer" />
