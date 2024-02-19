@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+
+<pipeline ssi-v="1">
+
+	<register>
+		<load name="audio" depend="ssidialog.dll" />
+	</register>
+
+	<!-- # Audio input
+
+	Here in this section we define the audio input. The audio input can be either live from a microphone or from a file.
+
+	To set the audio source use the config variable `audio:live` and `audio:live:mic` in this ways:
+	- `audio:live=true`:
+		- `audio:live:mic=true`: input from a microphone
+		- `audio:live:mic=false`: output of the soundcard (make sure to set the output format of your
+	soundcard to `16 bit` and `48000 Hz`)
+	- `audio:live=false`: input from wav file (`mono` and sampled at `48000 Hz`). Beware, the when the file ends, it will start again from the beginning.
+		- `audio:file`: path to the wav file
+
+	![](https://raw.githubusercontent.com/hcmlab/vadnet/master/pics/loopback.png)
+	
+	-->
+	<gate open="$(audio:live)">
+		<gate open="$(audio:live:mic)">
+			<sensor create="Audio" option="..\options\microphone" sr="48000" scale="true"
+				blockInSamples="416">
+				<output channel="audio" pin="audio" />
+			</sensor>
+		</gate>
+		<gate close="$(audio:live:mic)">
+			<sensor create="AudioLoopBack" option="..\options\loopback" scale="true">
+				<output channel="audio" pin="audio">
+					<transformer create="Selector" indices="0" />
+				</output>
+			</sensor>
+		</gate>
+	</gate>
+
+	<gate close="$(audio:live)">
+		<sensor create="WavReader:reader" path="$(audio:file)" loop="true">
+			<output channel="audio" pin="audio" size="2.0s" />
+		</sensor>
+	</gate>
+
+</pipeline>
