@@ -84,37 +84,37 @@
 			<input pin="audio" frame="0.1s" />
 		</consumer>
 	</gate>
-	<consumer create="SignalPainter:plot" title="AUDIO" size="10" type="2">
+	<consumer create="SignalPainter:plot-audio" title="AUDIO" size="10" type="2">
 		<input pin="audio" frame="0.3s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" title="LOUDNESS" size="10.0" type="5" colormap="3">
+	<consumer create="SignalPainter:plot-f-loudness" title="LOUDNESS" size="10.0" type="5" colormap="3">
 		<input pin="loudness" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" title="PITCH" type="5">
+	<consumer create="SignalPainter:plot-f-pitch" title="PITCH" type="5">
 		<input pin="pitch" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="ENERGY" type="4">
+	<consumer create="SignalPainter:plot-f-energy" size="10" title="ENERGY" type="4">
 		<input pin="energy" frame="0.3s" delta="0.15s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" title="JITTER" type="5">
+	<consumer create="SignalPainter:plot-f-jitter" title="JITTER" type="5">
 		<input pin="jitter" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" title="SHIMMER" type="5">
+	<consumer create="SignalPainter:plot-f-shimmer" title="SHIMMER" type="5">
 		<input pin="shimmer" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="ALPHA RATIO" type="4">
+	<consumer create="SignalPainter:plot-f-alpha-ratio" size="10" title="ALPHA RATIO" type="4">
 		<input pin="alpha-ratio" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="HAMMARBERG INDEX" type="4">
+	<consumer create="SignalPainter:plot-f-hammarberg-index" size="10" title="HAMMARBERG INDEX" type="4">
 		<input pin="hammarberg-index" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL SLOPE" type="4">
+	<consumer create="SignalPainter:plot-f-spectral-slope" size="10" title="SPECTRAL SLOPE" type="4">
 		<input pin="spectral-slope" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-data" size="10" title="SPECTRAL FLUX" type="5">
+	<consumer create="SignalPainter:plot-f-spectral-flux" size="10" title="SPECTRAL FLUX" type="5">
 		<input pin="spectral-flux" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plota" title="VAD" size="10" type="2">
+	<consumer create="SignalPainter:plot-vad" title="VAD" size="10" type="2">
 		<input pin="vad-audio" frame="0.1s" />
 	</consumer>
 	<gate open="$(features:mffc)">
@@ -125,17 +125,17 @@
 
 	<gate close="$(features:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="0,0,400,300">plot</area>
-			<area pos="0,300,600,600" nv="2" nh="5">plot-data*</area>
-			<area pos="400,0,400,300">plota</area>
+			<area pos="0,0,400,300">plot-audio</area>
+			<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
+			<area pos="400,0,400,300">plot-vad</area>
 			<area pos="900,0,600,800">monitor</area>
 		</object>
 	</gate>
 	<gate open="$(features:mffc)">
 		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="0,0,400,300">plot</area>
-			<area pos="0,300,600,600" nv="2" nh="5">plot-data*</area>
-			<area pos="400,0,400,300">plota</area>
+			<area pos="0,0,400,300">plot-audio</area>
+			<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
+			<area pos="400,0,400,300">plot-vad</area>
 			<area pos="600,300,400,300">plot-mffc</area>
 			<area pos="1100,0,400,800">monitor</area>
 		</object>
