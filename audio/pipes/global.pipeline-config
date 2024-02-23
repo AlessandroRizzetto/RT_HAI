@@ -1,1 +1,2 @@
-audio:live = false     # $(bool) use live input (otherwise read from file)
+# $(bool) use live input (otherwise read from file)
+audio:live = false

@@ -1,7 +1,14 @@
-features:mffc = false # $(bool) extract and show mffc
+# $(bool) extract and show mffc
+features:mffc = false
 
-user:class = CLASSE # $(string) user class/identifier
+# $(string) user class/identifier
+user:class = CLASSE
 
-output:file:save = true # $(boolean) store features extracted on file
-output:file:path = ..\data\dataTable.csv # $(string) if features storage is selected, use this path to store features
-output:file:new = true # $(boolean) if features storage is selected and there exists another file in the same path, overwrites it
+# $(boolean) store features extracted on file
+output:file:save = true
+
+# $(string) if features storage is selected, use this path to store features
+output:file:path = ..\data\dataTable.csv
+
+# $(boolean) if features storage is selected and there exists another file in the same path, overwrites it
+output:file:new = true
