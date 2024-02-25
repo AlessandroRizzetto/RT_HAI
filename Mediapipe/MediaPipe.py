@@ -70,17 +70,17 @@ def serial_communication(message, LAST_MESSAGE, value, arduino_is_connected = ar
         print(LAST_MESSAGE, message)
         if message == "HEAD":
             #ser.write(f"HEAD_INCLINATION:{value}\n".encode('utf-8'))
-            ser.write(f"<h,{round(abs(value))}>\n".encode('utf-8'))
+            ser.write(f"<h,0,{round(abs(value))}>\n".encode('utf-8'))
             
         if message == 1 and LAST_MESSAGE == False:
             #ser.write("VIBRATION_ON\n".encode('utf-8'))
-            ser.write(f"<v,1>\n".encode('utf-8'))
+            ser.write(f"<v,1,100>\n".encode('utf-8'))
             print("Vibration has been turned ON!")
 
             LAST_MESSAGE = True
         elif message == 0 and LAST_MESSAGE == True:
             #ser.write("VIBRATION_OFF\n".encode('utf-8'))
-            ser.write(f"<v,0>\n".encode('utf-8'))
+            ser.write(f"<v,1,0>\n".encode('utf-8'))
 
             print("Vibration has been turned OFF!")
             LAST_MESSAGE = False
