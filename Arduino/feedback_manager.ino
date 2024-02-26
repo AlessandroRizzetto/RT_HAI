@@ -133,7 +133,7 @@ void loop()
       vibrationLevel[i] = toAnalog(actualLevel[i]);
       changeVibration(i, vibrationLevel[i]);
       
-      printPeltierState(i);
+      printVibrationState(i);
       if (actualLevel[i] == levelToReach[i]) {
         Serial.println("");
       }
@@ -148,22 +148,22 @@ vibrationMode toVibrationMode(int mode) {
   vibrationMode actualMode = NONE;
   
   switch(mode) {
-    case 1:
+    case 0:
       actualMode = MOTORW1;
       break;
-    case 2:
+    case 1:
       actualMode = MOTORW2;
       break;
-    case 3:
+    case 2:
       actualMode = MOTORB1;
       break;
-    case 4:
+    case 3:
       actualMode = MOTORB2;
       break;
-    case 5:
+    case 4:
       actualMode = MOTORW;
       break;
-    case 6:
+    case 5:
       actualMode = MOTORB;
       break;
   }
@@ -266,7 +266,7 @@ void printPeltierState(int code) {
 void printVibrationState(int code) {
   Serial.print("VibrationCode=");
   Serial.print(code);
-  Serial.print("Level=");
+  Serial.print(" Level=");
   Serial.print(actualLevel[code]);
   if (actualLevel[code] != levelToReach[code]) {
     Serial.print(" LevelToReach=");
