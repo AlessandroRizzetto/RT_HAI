@@ -23,6 +23,10 @@ start_time = None
 elapsed_time = None
 user_body = {}
 arduino_is_connected = False
+ssi_is_connected = sys.argv[1] if len(sys.argv) > 1 else 0
+is_online = sys.argv[2] if len(sys.argv) > 2 else 1
+configuration_time = sys.argv[3] if len(sys.argv) > 3 else 5
+
 
 try: # to check if the arduino is connected to the PC and manage errors related to the serial communication
     ser = serial.Serial('COM5', 9600, timeout=1)
@@ -37,10 +41,11 @@ except serial.SerialException as e:
 
 
 
-def manage_socket(host, port, state, ssi_is_connected):
+def manage_socket(host, port, ssi_is_connected, state):
+    print(state, ssi_is_connected)
     if state == "start":
-        ssi_is_connected = input("Is the SSI connected? Press 0 if it is not connected, 1 if it is connected")
-        if ssi_is_connected == "1":
+        # ssi_is_connected = input("Is the SSI connected? Press 0 if it is not connected, 1 if it is connected")
+        if ssi_is_connected == True:
             # create a socket and send data to the server
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             client_socket.sendto(bytes(NETWORK_MESSAGE, "utf-8"), (HOST, SYNC))
@@ -48,11 +53,11 @@ def manage_socket(host, port, state, ssi_is_connected):
             # client_socket.connect((host, port))  # connect to the server
             # print("Connected to server")
             return client_socket, ssi_is_connected
-        elif ssi_is_connected == "0":
+        elif ssi_is_connected == False:
             return None, ssi_is_connected
         else:
             print("Wrong input, please try again")
-            manage_socket(host, port, state)
+            manage_socket(host, port, ssi_is_connected, state)
     if state == "stop":
         if ssi_is_connected == "1":
             # client_socket.sendto(bytes("SSI:STOP:RUN1\0", "utf-8"), (HOST, SYNC)) # send a message to the server to stop the acquisition
@@ -68,46 +73,84 @@ def serial_communication(message, LAST_MESSAGE, value, arduino_is_connected = ar
     # COM4 is the port number of the Arduino
     if arduino_is_connected:
         print(LAST_MESSAGE, message)
-        if message == "HEAD":
-            #ser.write(f"HEAD_INCLINATION:{value}\n".encode('utf-8'))
-            ser.write(f"<h,{round(abs(value))}>\n".encode('utf-8'))
+        
+        
             
+        if message == "HANDS_NOT_VISIBILITY" and LAST_MESSAGE == False:
+            ser.write(f"<v,4,20,20,1>\n".encode('utf-8')) # sinusoide
+            LAST_MESSAGE = True
+        if message == "HANDS_VISIBILITY" and LAST_MESSAGE == True:
+            ser.write(f"<v,4,0,0,1>\n".encode('utf-8'))
+            LAST_MESSAGE = False
+            
+        if message == "HANDS_TOUCHING" and LAST_MESSAGE == False:
+            ser.write(f"<v,4,10,10,0>\n".encode('utf-8'))
+            print("Message sent to the arduino, hands touching")
+            LAST_MESSAGE = True
+        if message == "HANDS_NOT_TOUCHING" and LAST_MESSAGE == True:
+            ser.write(f"<v,4,0,0,0>\n".encode('utf-8'))
+            print("Message sent to the arduino, hands not touching")
+            LAST_MESSAGE = False
+            
+        if message == "BAD_BODY_DIRECTION" and LAST_MESSAGE == False:
+            if value == "Body Right":
+                ser.write(f"<v,3,20,20,0>\n".encode('utf-8'))
+            elif value == "Body Left":
+                ser.write(f"<v,2,20,20,0>\n".encode('utf-8'))
+            LAST_MESSAGE = True
+        if message == "GOOD_BODY_DIRECTION" and LAST_MESSAGE == True:
+            ser.write(f"<v,5,0,0,0>\n".encode('utf-8'))
+            LAST_MESSAGE = False
+        
+        if message == "CROUCH" and LAST_MESSAGE == False:
+            ser.write(f"<v,5,20,20,0>\n".encode('utf-8'))
+            LAST_MESSAGE = True
+        if message == "NOT_CROUCH" and LAST_MESSAGE == True:
+            ser.write(f"<v,5,0,0,0>\n".encode('utf-8'))
+            LAST_MESSAGE = False
+            
+        if message == "BAD_HEAD_DIRECTION" and LAST_MESSAGE == False:
+            ser.write(f"<h,0,20,20,0>\n".encode('utf-8'))
+        if message == "GOOD_HEAD_DIRECTION" and LAST_MESSAGE == True:
+            ser.write(f"<h,0,0,0,0>\n".encode('utf-8'))
+            LAST_MESSAGE = False
+
         if message == 1 and LAST_MESSAGE == False:
             #ser.write("VIBRATION_ON\n".encode('utf-8'))
-            ser.write(f"<v,1>\n".encode('utf-8'))
+            
+            ser.write(f"<v,1,100>\n".encode('utf-8'))
             print("Vibration has been turned ON!")
 
             LAST_MESSAGE = True
         elif message == 0 and LAST_MESSAGE == True:
             #ser.write("VIBRATION_OFF\n".encode('utf-8'))
-            ser.write(f"<v,0>\n".encode('utf-8'))
-
-            print("Vibration has been turned OFF!")
+            
+            ser.write(f"<v,1,0>\n".encode('utf-8'))
             LAST_MESSAGE = False
-
+            
     return LAST_MESSAGE
 
 def settings(start_time):
     # ask the user if he wants to use a video or the webcam
     time.sleep(0.5)
-    is_online = input("Do you want to compute the data from a video or from the webcam? Press 0 to use a video, 1 to use the webcam \n")
-    if is_online == "1":
-        is_online = True
-    elif is_online == "0":
-        is_online = False
-    else:
-        print("Wrong input, please try again")
-        settings(start_time)
+    # is_online = input("Do you want to compute the data from a video or from the webcam? Press 0 to use a video, 1 to use the webcam \n")
+    # if is_online == "1":
+    #     is_online = True
+    # elif is_online == "0":
+    #     is_online = False
+    # else:
+    #     print("Wrong input, please try again, online?")
+    #     settings(start_time)
     video_is_over = False
     
     # ask the user how many seconds he wants to wait before starting the configuration
-    configuration_time = float(input("How many seconds do you want to wait before starting the configuration? "))
+    # configuration_time = float(input("How many seconds do you want to wait before starting the configuration? "))
     # check if the configuration time is a number
-    try:
-        configuration_time = float(configuration_time)
-    except:
-        print("Wrong input, please try again")
-        settings(start_time)
+    # try:
+    #     configuration_time = float(configuration_time)
+    # except:
+    #     print("Wrong input, please try again, configuration time")
+    #     settings(start_time)
     # configuration of the body of the user
     if start_time == None:
         start_time = time.time()
@@ -261,15 +304,33 @@ def bodyAndFace_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_M
             if body_x < -10:
                 body_text = "Body Right"
                 print("Body Right")
+                serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
             elif body_x > 10:
                 body_text = "Body Left"
                 print("Body Left")
+                serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
             else:
                 body_text = "Body Forward"
                 print("Body Forward")
+                serial_communication("GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
 
             featuresTable[f'body_direction'].append(body_text)
             featuresTable[f'head_direction'].append(text)
+            
+            # if the head direction values are more than 300, compute the most frequent value and send it to the arduino
+            # print("len(featuresTable[f'head_direction']): ", len(featuresTable[f'head_direction']))
+            if len(featuresTable[f'head_direction']) > 30:
+                # take the last 300 values
+                features = featuresTable[f'head_direction'][-30:]
+                values_count = pd.Series(features).value_counts()
+        
+                most_frequent_head_direction = values_count.idxmax()
+                print("Most frequent head direction: ", most_frequent_head_direction)
+                if most_frequent_head_direction == "Looking Forward":
+                    serial_communication("GOOD_HEAD_DIRECTION", LAST_MESSAGE, 0)
+                else:
+                    serial_communication("BAD_HEAD_DIRECTION", LAST_MESSAGE, most_frequent_head_direction)
+                    
             
             # Display the nose and body direction
             nose_3d_projection, jacobian = cv2.projectPoints(nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
@@ -338,9 +399,9 @@ def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle
         featuresTable[f'crouch'].append("Not crouched")
     # if the user is crouching, send a message to the arduino to turn on the vibration
     if abs(yTorso) < abs(standart_yTorso * yTorso_proportion) and abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
-        LAST_MESSAGE = serial_communication(1, LAST_MESSAGE, 0)
+        LAST_MESSAGE = serial_communication("CROUCH", LAST_MESSAGE, 0)
     else:
-        LAST_MESSAGE = serial_communication(0, LAST_MESSAGE, 0)
+        LAST_MESSAGE = serial_communication("NOT_CROUCH", LAST_MESSAGE, 0)
 
 def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable):
     # calculate the distance between the hands
@@ -349,9 +410,11 @@ def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable):
     if hands_distance < 0.1:
         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE, hands_distance)
         featuresTable[f'hands_distance'].append("Hands touching")
+        serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
     else:
         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE, hands_distance)
         featuresTable[f'hands_distance'].append("Hands not touching")
+        serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
     return hands_distance
 
 def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable):
@@ -362,9 +425,11 @@ def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable):
         hands_are_visible = False
         featuresTable[f'hands_visibility'].append("Hands not visible")
         #print("Hands not visible")
+        serial_communication("HANDS_NOT_VISIBILITY", LAST_MESSAGE, 0)
     else:
         hands_are_visible = True
         featuresTable[f'hands_visibility'].append("Hands visible")
+        serial_communication("HANDS_VISIBILITY", LAST_MESSAGE, 0)
         #print("Hands visible")
     
     
@@ -614,7 +679,7 @@ def mediaPipe(client_socket, ssi_is_connected):
     cv2.destroyAllWindows()
     
     offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
-    manage_socket(HOST, PORT, "stop", ssi_is_connected)
+    manage_socket(HOST, PORT, ssi_is_connected, "stop")
 
 
 if __name__ == "__main__":
@@ -622,8 +687,11 @@ if __name__ == "__main__":
     host = "localhost"
     port = 9000
 
+    ssi_is_connected = sys.argv[1] if len(sys.argv) > 1 else False
+    is_online = sys.argv[2] if len(sys.argv) > 2 else True
+    configuration_time = sys.argv[3] if len(sys.argv) > 3 else float(5)
     # create a socket
-    client_socket, ssi_is_connected = manage_socket(host, port, state = "start", ssi_is_connected = "")
+    client_socket, ssi_is_connected = manage_socket(host, port, ssi_is_connected, state="start")
     #client_socket = 1
     # start mediapipe
     mediaPipe(client_socket, ssi_is_connected)
