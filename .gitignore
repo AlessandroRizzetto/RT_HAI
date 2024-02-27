@@ -1,6 +1,7 @@
 /bin/*
 !/bin/7za.exe
 !/bin/wget.exe
+**/ssi_last.err
 
 **/__pycache__
 /audio/data/tmp

@@ -1,17 +1,19 @@
 enum vibrationMode {
   NONE,
-  MOTOR1,
-  MOTOR2,
-  MOTOR3,
-  MOTOR12,
-  MOTOR13,
-  MOTOR23,
+  MOTORW1,
+  MOTORW2,
+  MOTORB1,
+  MOTORB2,
+  MOTORW,
+  MOTORB,
 };
 
-#define motorpin1 3
-#define motorpin2 5
-#define motorpin3 6
-#define peltier 9
+#define motorpin_w1 3
+#define motorpin_w2 5
+#define motorpin_b1 6
+#define motorpin_b2 9
+#define peltier_0 10
+#define peltier_1 11
 
 // Serial Data parsing
 const byte numChars = 16;
@@ -20,31 +22,47 @@ char tempChars[numChars];        // temporary array for use when parsing
 // variables to hold the parsed data
 char code[2];
 int value = 0;
+int intensity = 0;
 boolean newData = false;
 
-// Vibration variables
-vibrationMode vMode = NONE;
-vibrationMode actualVMode = NONE;
+// Peltier variables
+const int pCells = 2;
+const int pPace = 5;
+int actualPower[pCells] = {0,0}; // Power level fro 0 to 99%
+int powerToReach[pCells] = {0,0};
+int peltierLevel[pCells]; // This is a value from 0 to 255 that actually controls the MOSFET
 
-int power = 0; // Power level fro 0 to 99%
-int powerToReach = 0;
-int peltierLevel = map(power, 0, 99, 0, 255); // This is a value from 0 to 255 that actually controls the MOSFET
+// Vibration variables
+const int vMotors = 4;
+//const int vPace = 4;
+vibrationMode vMode = NONE;
+int actualLevel[vMotors] = {0,0,0,0}; // Intensity level fro 0 to 99%
+int levelToReach[vMotors] = {0,0,0,0};
+int vibrationLevel[vMotors]; // This is a value from 0 to 255 that actually controls the MOSFET
+
+int tmpInt;
 
 void setup()
 {
-  pinMode(motorpin1, OUTPUT);
-  pinMode(motorpin2, OUTPUT);
-  pinMode(motorpin3, OUTPUT);
+  for (int i = 0; i < pCells; i++)
+  {
+    peltierLevel[i] = toAnalog(actualPower[i]);
+  }
+  for (int i = 0; i < vMotors; i++)
+  {
+    vibrationLevel[i] = toAnalog(actualLevel[i]);
+  }
   
   Serial.begin(9600);
   
-  Serial.print("Power=");
-  Serial.print(power);
-  Serial.print(" PLevel=");
-  Serial.println(peltierLevel);
-  Serial.print("Mode=");
-  Serial.println(vMode);
-  Serial.println("");
+  for (int i = 0; i < pCells; i++)
+  {
+    printPeltierState(i);
+  }
+  for (int i = 0; i < vMotors; i++)
+  {
+    printVibrationState(i);
+  }
 }
 
 //============
@@ -58,58 +76,64 @@ void loop()
     //   because strtok() used in parseData() replaces the commas with \0
     parseData();
     if (!strcmp(code,"h")) {
-      powerToReach = value;
-      
-      if(powerToReach > 99) powerToReach = 99;
-      if(powerToReach < 0) powerToReach = 0;
+      powerToReach[value] = correctValue(intensity);
     } else if (!strcmp(code,"v")) {
       vMode = toVibrationMode(value);
+      if (vMode == NONE) {
+        for (int i = 0; i < vMotors; i++)
+        {
+          levelToReach[i] = 0;
+        }
+      } else if (vMode == MOTORW1) {
+        levelToReach[0] = correctValue(intensity);
+      } else if (vMode == MOTORW2) {
+        levelToReach[1] = correctValue(intensity);
+      } else if (vMode == MOTORB1) {
+        levelToReach[2] = correctValue(intensity);
+      } else if (vMode == MOTORB2) {
+        levelToReach[3] = correctValue(intensity);
+      } else if (vMode == MOTORW) {
+        levelToReach[0] = correctValue(intensity);
+        levelToReach[1] = correctValue(intensity);
+      } else if (vMode == MOTORB) {
+        levelToReach[2] = correctValue(intensity);
+        levelToReach[3] = correctValue(intensity);
+      }
     }
     
     newData = false;
   }
   
-  if (power != powerToReach) {
-    if (power < powerToReach) {
-      power += 2;
-    } else {
-      power -= 2;
+  for (int i = 0; i < pCells; i++)
+  {
+    if (actualPower[i] != powerToReach[i]) {
+      actualPower[i] += computePace(powerToReach[i] - actualPower[i],pPace);
+      
+      peltierLevel[i] = toAnalog(actualPower[i]);
+      changePeltier(i, peltierLevel[i]);
+      
+      printPeltierState(i);
+      if (actualPower[i] == powerToReach[i]) {
+        Serial.println("");
+      }
+      delay(500);
     }
-    
-    peltierLevel = map(power, 0, 99, 0, 255);
-    analogWrite(peltier, peltierLevel); //Write this new value out to the port
-    
-    Serial.print("Power=");
-    Serial.print(power);
-    Serial.print(" PowerToReach=");
-    Serial.print(powerToReach);
-    Serial.print(" PLevel=");
-    Serial.println(peltierLevel);
-    if (power == powerToReach) {
-      Serial.println("");
-    }
-    delay(500);
   }
   
-  if (vMode != actualVMode) {
-    actualVMode = vMode;
-    if (actualVMode == NONE) {
-      digitalWrite(motorpin1, LOW);
-      digitalWrite(motorpin2, LOW);
-    } else if (actualVMode == MOTOR1) {
-      digitalWrite(motorpin1, HIGH);
-      digitalWrite(motorpin2, LOW);
-    } else if (actualVMode == MOTOR2) {
-      digitalWrite(motorpin1, LOW);
-      digitalWrite(motorpin2, HIGH);
-    } else if (actualVMode == MOTOR12) {
-      digitalWrite(motorpin1, HIGH);
-      digitalWrite(motorpin2, HIGH);
+  for (int i = 0; i < vMotors; i++)
+  {
+    if (actualLevel[i] != levelToReach[i]) {
+      actualLevel[i] = levelToReach[i];
+      
+      vibrationLevel[i] = toAnalog(actualLevel[i]);
+      changeVibration(i, vibrationLevel[i]);
+      
+      printVibrationState(i);
+      if (actualLevel[i] == levelToReach[i]) {
+        Serial.println("");
+      }
+      //delay(500);
     }
-    
-    Serial.print("Mode=");
-    Serial.println(vMode);
-    Serial.println("");
   }
 }
 
@@ -119,23 +143,23 @@ vibrationMode toVibrationMode(int mode) {
   vibrationMode actualMode = NONE;
   
   switch(mode) {
+    case 0:
+      actualMode = MOTORW1;
+      break;
     case 1:
-      actualMode = MOTOR1;
+      actualMode = MOTORW2;
       break;
     case 2:
-      actualMode = MOTOR2;
+      actualMode = MOTORB1;
       break;
     case 3:
-      actualMode = MOTOR3;
+      actualMode = MOTORB2;
       break;
     case 4:
-      actualMode = MOTOR12;
+      actualMode = MOTORW;
       break;
     case 5:
-      actualMode = MOTOR13;
-      break;
-    case 6:
-      actualMode = MOTOR23;
+      actualMode = MOTORB;
       break;
   }
   
@@ -181,5 +205,99 @@ void parseData() { // split the data into its parts
   strcpy(code, strtokIndx); // copy it to dir
 
   strtokIndx = strtok(NULL, ","); // this continues where the previous call left off
-  value = atoi(strtokIndx);     // convert this part to an integer, speed
+  value = atoi(strtokIndx);     // convert this part to an integer
+
+  strtokIndx = strtok(NULL, ",");
+  intensity = atoi(strtokIndx);     // convert this part to an integer
+}
+
+int toAnalog(int value) {
+  return map(value, 0, 99, 0, 255);
+}
+
+void changePeltier(int code, int power) {
+  switch (code)
+  {
+  case 0:
+    analogWrite(peltier_0, peltierLevel[code]); //Write this new value out to the port
+    break;
+  case 1:
+    analogWrite(peltier_1, peltierLevel[code]); //Write this new value out to the port
+    break;
+  }
+}
+
+void changeVibration(int code, int power) {
+  switch (code)
+  {
+  case 0:
+    analogWrite(motorpin_w1, vibrationLevel[code]); //Write this new value out to the port
+    break;
+  case 1:
+    analogWrite(motorpin_w2, vibrationLevel[code]); //Write this new value out to the port
+    break;
+  case 2:
+    analogWrite(motorpin_b1, vibrationLevel[code]); //Write this new value out to the port
+    break;
+  case 3:
+    analogWrite(motorpin_b2, vibrationLevel[code]); //Write this new value out to the port
+    break;
+  }
+}
+
+void printPeltierState(int code) {
+  Serial.print("PeltierCode=");
+  Serial.print(code);
+  Serial.print(" Power=");
+  Serial.print(actualPower[code]);
+  if (actualPower[code] != powerToReach[code]) {
+    Serial.print(" PowerToReach=");
+    Serial.print(powerToReach[code]);
+  }
+  Serial.print(" PLevel=");
+  Serial.println(peltierLevel[code]);
+}
+
+void printVibrationState(int code) {
+  Serial.print("VibrationCode=");
+  Serial.print(code);
+  Serial.print(" Level=");
+  Serial.print(actualLevel[code]);
+  if (actualLevel[code] != levelToReach[code]) {
+    Serial.print(" LevelToReach=");
+    Serial.print(levelToReach[code]);
+  }
+  Serial.print(" VLevel=");
+  Serial.println(vibrationLevel[code]);
+}
+
+int correctValue(int value) {
+  if (value < 0) {
+    return 0;
+  } else if (value > 99) {
+    return 99;
+  } else {
+    return value;
+  }
+}
+
+int computePace(int diff, int defaultPace) {
+  
+  int actualPace;
+  
+  if (diff >= 0) {
+    if (diff >= defaultPace) {
+      actualPace = defaultPace;
+    } else {
+      actualPace = diff;
+    }
+  } else {
+    if ((-diff) >= defaultPace) {
+      actualPace = -defaultPace;
+    } else {
+      actualPace = diff;
+    }
+  }
+  
+  return actualPace;
 }
