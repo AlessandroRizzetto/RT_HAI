@@ -11,9 +11,9 @@ enum vibrationMode {
 #define motorpin_w1 3
 #define motorpin_w2 5
 #define motorpin_b1 6
-#define motorpin_b2 7
-#define peltier_0 9
-#define peltier_1 10
+#define motorpin_b2 9
+#define peltier_0 10
+#define peltier_1 11
 
 // Serial Data parsing
 const byte numChars = 16;
@@ -27,16 +27,20 @@ boolean newData = false;
 
 // Peltier variables
 const int pCells = 2;
+const int pPace = 5;
 int actualPower[pCells] = {0,0}; // Power level fro 0 to 99%
 int powerToReach[pCells] = {0,0};
 int peltierLevel[pCells]; // This is a value from 0 to 255 that actually controls the MOSFET
 
 // Vibration variables
 const int vMotors = 4;
+//const int vPace = 4;
 vibrationMode vMode = NONE;
 int actualLevel[vMotors] = {0,0,0,0}; // Intensity level fro 0 to 99%
 int levelToReach[vMotors] = {0,0,0,0};
 int vibrationLevel[vMotors]; // This is a value from 0 to 255 that actually controls the MOSFET
+
+int tmpInt;
 
 void setup()
 {
@@ -103,11 +107,7 @@ void loop()
   for (int i = 0; i < pCells; i++)
   {
     if (actualPower[i] != powerToReach[i]) {
-      if (actualPower[i] < powerToReach[i]) {
-        actualPower[i] += 2;
-      } else {
-        actualPower[i] -= 2;
-      }
+      actualPower[i] += computePace(powerToReach[i] - actualPower[i],pPace);
       
       peltierLevel[i] = toAnalog(actualPower[i]);
       changePeltier(i, peltierLevel[i]);
@@ -123,11 +123,6 @@ void loop()
   for (int i = 0; i < vMotors; i++)
   {
     if (actualLevel[i] != levelToReach[i]) {
-      /*if (actualLevel[i] < levelToReach[i]) {
-        actualLevel[i] += 2;
-      } else {
-        actualLevel[i] -= 2;
-      }*/
       actualLevel[i] = levelToReach[i];
       
       vibrationLevel[i] = toAnalog(actualLevel[i]);
@@ -284,4 +279,25 @@ int correctValue(int value) {
   } else {
     return value;
   }
+}
+
+int computePace(int diff, int defaultPace) {
+  
+  int actualPace;
+  
+  if (diff >= 0) {
+    if (diff >= defaultPace) {
+      actualPace = defaultPace;
+    } else {
+      actualPace = diff;
+    }
+  } else {
+    if ((-diff) >= defaultPace) {
+      actualPace = -defaultPace;
+    } else {
+      actualPace = diff;
+    }
+  }
+  
+  return actualPace;
 }
