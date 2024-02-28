@@ -69,9 +69,11 @@
 		</transformer>
 	</gate>
 
-	<object create="EventMonitor:monitor" title="Events">
-		<listen address="vad@audio" span="10000"/>
-	</object>
+	<gate open="$(output:visualization:debug)">
+		<object create="EventMonitor:monitor" title="Events">
+			<listen address="vad@audio" span="10000"/>
+		</object>
+	</gate>
 	<!---->
 
 	<!-- # Playback and Visualization
@@ -93,25 +95,25 @@
 	<consumer create="SignalPainter:plot-f-pitch" title="PITCH" type="5">
 		<input pin="pitch" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-energy" size="10" title="ENERGY" type="4">
+	<consumer create="SignalPainter:plot-f-h-energy" size="10" title="ENERGY" type="4">
 		<input pin="energy" frame="0.3s" delta="0.15s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-jitter" title="JITTER" type="5">
+	<consumer create="SignalPainter:plot-f-h-jitter" title="JITTER" type="5">
 		<input pin="jitter" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-shimmer" title="SHIMMER" type="5">
+	<consumer create="SignalPainter:plot-f-h-shimmer" title="SHIMMER" type="5">
 		<input pin="shimmer" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-alpha-ratio" size="10" title="ALPHA RATIO" type="4">
+	<consumer create="SignalPainter:plot-f-h-alpha-ratio" size="10" title="ALPHA RATIO" type="4">
 		<input pin="alpha-ratio" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-hammarberg-index" size="10" title="HAMMARBERG INDEX" type="4">
+	<consumer create="SignalPainter:plot-f-h-hammarberg-index" size="10" title="HAMMARBERG INDEX" type="4">
 		<input pin="hammarberg-index" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-spectral-slope" size="10" title="SPECTRAL SLOPE" type="4">
+	<consumer create="SignalPainter:plot-f-h-spectral-slope" size="10" title="SPECTRAL SLOPE" type="4">
 		<input pin="spectral-slope" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-spectral-flux" size="10" title="SPECTRAL FLUX" type="5">
+	<consumer create="SignalPainter:plot-f-h-spectral-flux" size="10" title="SPECTRAL FLUX" type="5">
 		<input pin="spectral-flux" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-vad" title="VAD" size="10" type="2">
@@ -123,21 +125,32 @@
 		</consumer>
 	</gate>
 
-	<gate close="$(features:mffc)">
-		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="0,0,400,300">plot-audio</area>
-			<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
-			<area pos="400,0,400,300">plot-vad</area>
-			<area pos="900,0,600,800">monitor</area>
-		</object>
+	<gate open="$(output:visualization:debug)">
+		<gate close="$(features:mffc)">
+			<object create="Decorator" icon="true" title="Pipeline">
+				<area pos="0,0,400,300">plot-audio</area>
+				<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
+				<area pos="400,0,400,300">plot-vad</area>
+				<area pos="900,0,600,800">monitor</area>
+			</object>
+		</gate>
+		<gate open="$(features:mffc)">
+			<object create="Decorator" icon="true" title="Pipeline">
+				<area pos="0,0,400,300">plot-audio</area>
+				<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
+				<area pos="400,0,400,300">plot-vad</area>
+				<area pos="600,300,400,300">plot-mffc</area>
+				<area pos="1100,0,400,800">monitor</area>
+			</object>
+		</gate>
 	</gate>
-	<gate open="$(features:mffc)">
+	<gate close="$(output:visualization:debug)">
 		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="0,0,400,300">plot-audio</area>
-			<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
-			<area pos="400,0,400,300">plot-vad</area>
-			<area pos="600,300,400,300">plot-mffc</area>
-			<area pos="1100,0,400,800">monitor</area>
+			<area pos="100,100,250,650">plot-f-loudness</area>
+			<area pos="450,100,250,650">plot-f-pitch</area>
+			<area pos="1000,0,400,150">plot-audio</area>
+			<area pos="1000,150,400,150">plot-vad</area>
+			<area pos="900,300,600,600" nv="2" nh="4">plot-f-h-*</area>
 		</object>
 	</gate>
 	<!---->

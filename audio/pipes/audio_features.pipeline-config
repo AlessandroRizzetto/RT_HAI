@@ -12,3 +12,6 @@ output:file:path = ..\data\dataTable.csv
 
 # $(boolean) if features storage is selected and there exists another file in the same path, overwrites it
 output:file:new = true
+
+# $(boolean) show all output features if true
+output:visualization:debug = false
