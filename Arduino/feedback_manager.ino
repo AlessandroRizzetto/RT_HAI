@@ -199,9 +199,10 @@ char tempChars[numChars]; // temporary array for use when parsing
 // variables to hold the parsed data
 char code[2];
 int value = 0;
+PatternMode pattern = LINEAR;
 int min_intensity = 0;
 int max_intensity = 0;
-PatternMode pattern = LINEAR;
+int pace = 0;
 boolean newData = false;
 
 // Peltier variables
@@ -245,6 +246,7 @@ void loop()
     if (!strcmp(code, "h"))
     {
       pHandlers[value].setDevice(pattern, min_intensity, max_intensity);
+      pHandlers[value].setPace(pace);
     }
     else if (!strcmp(code, "v"))
     {
@@ -255,31 +257,31 @@ void loop()
         for (int i = 0; i < vMotors; i++)
         {
           vHandlers[i].setDevice(pattern, min_intensity, max_intensity);
-          updateVibrationPace(i, vPace);
+          vHandlers[i].setPace(pace);
         }
         break;
       case MOTORW1:
         vHandlers[0].setDevice(pattern, min_intensity, max_intensity);
-        updateVibrationPace(0, vPace);
+        vHandlers[0].setPace(pace);
         break;
       case MOTORW2:
         vHandlers[1].setDevice(pattern, min_intensity, max_intensity);
-        updateVibrationPace(1, vPace);
+        vHandlers[1].setPace(pace);
         break;
       case MOTORB1:
         vHandlers[2].setDevice(pattern, min_intensity, max_intensity);
-        updateVibrationPace(2, vPace);
+        vHandlers[2].setPace(pace);
         break;
       case MOTORB2:
         vHandlers[3].setDevice(pattern, min_intensity, max_intensity);
-        updateVibrationPace(3, vPace);
+        vHandlers[3].setPace(pace);
         break;
       case MOTORW:
         vHandlers[0].setDevice(pattern, min_intensity, max_intensity);
         vHandlers[1].setDevice(pattern, min_intensity, max_intensity);
         for (int i = 0; i < 2; i++)
         {
-          updateVibrationPace(i, vPace);
+          vHandlers[i].setPace(pace);
         }
         break;
       case MOTORB:
@@ -287,7 +289,7 @@ void loop()
         vHandlers[3].setDevice(pattern, min_intensity, max_intensity);
         for (int i = 2; i < 4; i++)
         {
-          updateVibrationPace(i, vPace);
+          vHandlers[i].setPace(pace);
         }
         break;
       }
@@ -415,8 +417,8 @@ void recvWithStartEndMarkers()
 
 //============
 
-void parseData()
-{ // split the data into its parts
+void parseData() // Message format: <code,value,pattern,min_intensity,max_intensity,pace>
+{                // split the data into its parts
 
   char *strtokIndx; // this is used by strtok() as an index
 
@@ -427,13 +429,16 @@ void parseData()
   value = atoi(strtokIndx);       // convert this part to an integer
 
   strtokIndx = strtok(NULL, ",");
+  pattern = toPatternMode(atoi(strtokIndx)); // convert this part to an integer
+
+  strtokIndx = strtok(NULL, ",");
   min_intensity = atoi(strtokIndx); // convert this part to an integer
 
   strtokIndx = strtok(NULL, ",");
   max_intensity = atoi(strtokIndx); // convert this part to an integer
 
   strtokIndx = strtok(NULL, ",");
-  pattern = toPatternMode(atoi(strtokIndx)); // convert this part to an integer
+  pace = atoi(strtokIndx); // convert this part to an integer
 }
 
 void changePeltier(int code, int power)
@@ -468,21 +473,6 @@ void changeVibration(int code, int power)
   }
 }
 
-void updateVibrationPace(int code, int pace)
-{
-  switch (pattern)
-  {
-  case LINEAR:
-    vHandlers[code].setPace(0);
-    break;
-  case SINUSOIDAL:
-    vHandlers[code].setPace(pace);
-    break;
-  default:
-    break;
-  }
-}
-
 void printPeltierState(int code)
 {
   Serial.print("PeltierCode=");
@@ -490,17 +480,16 @@ void printPeltierState(int code)
   Serial.print(" Mode=");
   Serial.print(pHandlers[code].getMode());
   Serial.print(" Power=");
+  Serial.print(pHandlers[code].getActualValue());
 
   if (pHandlers[code].getActualValue() != pHandlers[code].getValueToReach())
   {
-    Serial.print(pHandlers[code].getActualValue());
-    Serial.print(" PowerToReach=");
-    Serial.println(pHandlers[code].getValueToReach());
+    Serial.print(" PToReach=");
+    Serial.print(pHandlers[code].getValueToReach());
   }
-  else
-  {
-    Serial.println(pHandlers[code].getActualValue());
-  }
+
+  Serial.print(" Pace=");
+  Serial.println(pHandlers[code].getPace());
 }
 
 void printVibrationState(int code)
@@ -510,14 +499,14 @@ void printVibrationState(int code)
   Serial.print(" Mode=");
   Serial.print(vHandlers[code].getMode());
   Serial.print(" Level=");
+  Serial.print(vHandlers[code].getActualValue());
+
   if (vHandlers[code].getActualValue() != vHandlers[code].getActualValue())
   {
-    Serial.print(vHandlers[code].getActualValue());
-    Serial.print(" LevelToReach=");
-    Serial.println(pHandlers[code].getValueToReach());
+    Serial.print(" LToReach=");
+    Serial.print(pHandlers[code].getValueToReach());
   }
-  else
-  {
-    Serial.println(vHandlers[code].getActualValue());
-  }
+
+  Serial.print(" Pace=");
+  Serial.println(vHandlers[code].getPace());
 }
