@@ -72,61 +72,69 @@ def serial_communication(message, LAST_MESSAGE, value, arduino_is_connected = ar
     # --- ARDUINO-PC SERIAL COMMUNICATION SECTION --
     # COM4 is the port number of the Arduino
     if arduino_is_connected:
-        print(LAST_MESSAGE, message)
+        # print(LAST_MESSAGE, message)
         
-        
+        if message == "HANDS_NOT_VISIBILITY" and LAST_MESSAGE[0] == 0:
+            ser.write(f"<v,4,1,30,60,10>\n".encode('utf-8')) # sinusoide
+            print("Message sent to the arduino, hands not visible")
+            LAST_MESSAGE[0] = 1
+        if message == "HANDS_VISIBILITY" and LAST_MESSAGE[0] == 1:
+            ser.write(f"<v,4,1,0,0,0>\n".encode('utf-8'))
+            print("Message sent to the arduino, hands visible")
+            LAST_MESSAGE[0] = 0
             
-        if message == "HANDS_NOT_VISIBILITY" and LAST_MESSAGE == False:
-            ser.write(f"<v,4,20,20,1>\n".encode('utf-8')) # sinusoide
-            LAST_MESSAGE = True
-        if message == "HANDS_VISIBILITY" and LAST_MESSAGE == True:
-            ser.write(f"<v,4,0,0,1>\n".encode('utf-8'))
-            LAST_MESSAGE = False
-            
-        if message == "HANDS_TOUCHING" and LAST_MESSAGE == False:
-            ser.write(f"<v,4,10,10,0>\n".encode('utf-8'))
+        if message == "HANDS_TOUCHING" and LAST_MESSAGE[1] == 0:
+            ser.write(f"<v,4,0,40,40,0>\n".encode('utf-8'))
             print("Message sent to the arduino, hands touching")
-            LAST_MESSAGE = True
-        if message == "HANDS_NOT_TOUCHING" and LAST_MESSAGE == True:
-            ser.write(f"<v,4,0,0,0>\n".encode('utf-8'))
+            LAST_MESSAGE[1] = 1
+        if message == "HANDS_NOT_TOUCHING" and LAST_MESSAGE[1] == 1:
+            ser.write(f"<v,4,0,0,0,0>\n".encode('utf-8'))
             print("Message sent to the arduino, hands not touching")
-            LAST_MESSAGE = False
+            LAST_MESSAGE[1] = 0
             
-        if message == "BAD_BODY_DIRECTION" and LAST_MESSAGE == False:
+        if message == "BAD_BODY_DIRECTION" and LAST_MESSAGE[2] == 0:
             if value == "Body Right":
-                ser.write(f"<v,3,20,20,0>\n".encode('utf-8'))
+                ser.write(f"<v,3,0,30,30,0>\n".encode('utf-8'))
+                print("Message sent to the arduino, body right")
             elif value == "Body Left":
-                ser.write(f"<v,2,20,20,0>\n".encode('utf-8'))
-            LAST_MESSAGE = True
-        if message == "GOOD_BODY_DIRECTION" and LAST_MESSAGE == True:
-            ser.write(f"<v,5,0,0,0>\n".encode('utf-8'))
-            LAST_MESSAGE = False
+                ser.write(f"<v,2,0,30,30,0>\n".encode('utf-8'))
+                print("Message sent to the arduino, body left")
+            LAST_MESSAGE[2] = 1
+        if message == "GOOD_BODY_DIRECTION" and LAST_MESSAGE[2] == 1:
+            ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
+            print("Message sent to the arduino, body forward")
+            LAST_MESSAGE[2] = 0
         
-        if message == "CROUCH" and LAST_MESSAGE == False:
-            ser.write(f"<v,5,20,20,0>\n".encode('utf-8'))
-            LAST_MESSAGE = True
-        if message == "NOT_CROUCH" and LAST_MESSAGE == True:
-            ser.write(f"<v,5,0,0,0>\n".encode('utf-8'))
-            LAST_MESSAGE = False
+        if message == "CROUCH" and LAST_MESSAGE[3] == 0:
+            ser.write(f"<v,5,1,20,40,0>\n".encode('utf-8'))
+            print("Message sent to the arduino, crouch")
+            LAST_MESSAGE[3] = 1
+        if message == "NOT_CROUCH" and LAST_MESSAGE[3] == 1:
+            ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
+            print("Message sent to the arduino, not crouch")
+            LAST_MESSAGE[3] = 0
             
-        if message == "BAD_HEAD_DIRECTION" and LAST_MESSAGE == False:
-            ser.write(f"<h,0,20,20,0>\n".encode('utf-8'))
-        if message == "GOOD_HEAD_DIRECTION" and LAST_MESSAGE == True:
-            ser.write(f"<h,0,0,0,0>\n".encode('utf-8'))
-            LAST_MESSAGE = False
+        if message == "BAD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 0:
+            ser.write(f"<h,0,0,40,40,5>\n".encode('utf-8'))
+            print("Message sent to the arduino, head not forward")
+            LAST_MESSAGE[4] = 1
+        if message == "GOOD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 1:
+            ser.write(f"<h,0,0,0,0,5>\n".encode('utf-8'))
+            print("Message sent to the arduino, head forward")
+            LAST_MESSAGE[4] = 0
 
-        if message == 1 and LAST_MESSAGE == False:
-            #ser.write("VIBRATION_ON\n".encode('utf-8'))
+        # if message == 1 and LAST_MESSAGE == False:
+        #     #ser.write("VIBRATION_ON\n".encode('utf-8'))
             
-            ser.write(f"<v,1,100>\n".encode('utf-8'))
-            print("Vibration has been turned ON!")
+        #     ser.write(f"<v,1,100>\n".encode('utf-8'))
+        #     print("Vibration has been turned ON!")
 
-            LAST_MESSAGE = True
-        elif message == 0 and LAST_MESSAGE == True:
-            #ser.write("VIBRATION_OFF\n".encode('utf-8'))
+        #     LAST_MESSAGE = True
+        # elif message == 0 and LAST_MESSAGE == True:
+        #     #ser.write("VIBRATION_OFF\n".encode('utf-8'))
             
-            ser.write(f"<v,1,0>\n".encode('utf-8'))
-            LAST_MESSAGE = False
+        #     ser.write(f"<v,1,0>\n".encode('utf-8'))
+        #     LAST_MESSAGE = False
             
     return LAST_MESSAGE
 
@@ -207,150 +215,135 @@ def normalize(value): # to adapt when we will have the real values from experime
     min_value = 0
     return (value - min_value) / (max_value - min_value)
 
-def nose_test(client_socket, dataTable, LAST_MESSAGE): # function to test basic script's functionalities
-    # test 
-    nose_test = 1 - dataTable[f'{"NOSE"}_y'][-1]
-    # send data to the server
-    send_data_network(client_socket, str(
-        nose_test) + "\n")
-    if dataTable[f'{"NOSE"}_y'][-1] < 0.5:
-        LAST_MESSAGE = serial_communication(1, LAST_MESSAGE)
-    else:
-        LAST_MESSAGE = serial_communication(0, LAST_MESSAGE) 
+# def nose_test(client_socket, dataTable, LAST_MESSAGE): # function to test basic script's functionalities
+#     # test 
+#     nose_test = 1 - dataTable[f'{"NOSE"}_y'][-1]
+#     # send data to the server
+#     send_data_network(client_socket, str(
+#         nose_test) + "\n")
+#     if dataTable[f'{"NOSE"}_y'][-1] < 0.5:
+#         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE)
+#     else:
+#         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE) 
     
         
 
-def bodyAndFace_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable):
-    x = 0
-    y = 0
+def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable):
     body_2d = []
     body_3d = []
     text = ""
-    if Faceresults.multi_face_landmarks:
-        for face_landmarks in Faceresults.multi_face_landmarks:
-            for idx, lm in enumerate(face_landmarks.landmark):
-                if idx == 33 or idx == 263 or idx == 1 or idx == 61 or idx == 291 or idx == 199:
-                    if idx == 1:
-                        nose_2d = (lm.x * img_w, lm.y * img_h)
-                        nose_3d = (lm.x * img_w, lm.y * img_h, lm.z * 3000)
-
-                    x, y = int(lm.x * img_w), int(lm.y * img_h)
-
-                    # Get the 2D Coordinates
-                    face_2d.append([x, y])
-                    # Get the 3D Coordinates
-                    face_3d.append([x, y, lm.z])   
-            point_beetwen_shoulders_2d = ((dataTable[f'LEFT_SHOULDER_x'][-1] + dataTable[f'RIGHT_SHOULDER_x'][-1] / 2) * img_w , (dataTable[f'LEFT_SHOULDER_y'][-1] + dataTable[f'RIGHT_SHOULDER_y'][-1] / 2 * img_h))
-            point_beetwen_shoulders_3d = ((dataTable[f'LEFT_SHOULDER_x'][-1] + dataTable[f'RIGHT_SHOULDER_x'][-1] / 2) * img_w , (dataTable[f'LEFT_SHOULDER_y'][-1] + dataTable[f'RIGHT_SHOULDER_y'][-1] / 2) * img_h, (dataTable[f'LEFT_SHOULDER_z'][-1] + dataTable[f'RIGHT_SHOULDER_z'][-1] / 2) * 3000)
-            
-            # point_beetwen_shoulders_2d = (dataTable[f'LEFT_SHOULDER_x'][-1] * img_w , dataTable[f'LEFT_SHOULDER_y'][-1] * img_h)
-            # point_beetwen_shoulders_3d = (dataTable[f'LEFT_SHOULDER_x'][-1] * img_w , dataTable[f'LEFT_SHOULDER_y'][-1] * img_h, dataTable[f'LEFT_SHOULDER_z'][-1] * 3000)
-            
-            for landmark in ["LEFT_SHOULDER", "RIGHT_SHOULDER", "LEFT_HIP", "RIGHT_HIP"]:
-                x, y = int(dataTable[f'{landmark}_x'][-1] * img_w), int(dataTable[f'{landmark}_y'][-1] * img_h)
-                # Get the 2D Coordinates
-                body_2d.append([x, y])
-                # Get the 3D Coordinates
-                body_3d.append([x, y, dataTable[f'{landmark}_z'][-1]])
-            # Convert it to the NumPy array
-            face_2d = np.array(face_2d, dtype=np.float64)
-            body_2d = np.array(body_2d, dtype=np.float64)
-            
-            # Convert it to the NumPy array
-            face_3d = np.array(face_3d, dtype=np.float64)
-            body_3d = np.array(body_3d, dtype=np.float64)
-            
-            # The camera matrix
-            focal_length = 1 * img_w
-
-            cam_matrix = np.array([ [focal_length, 0, img_h / 2],
-                                    [0, focal_length, img_w / 2],
-                                    [0, 0, 1]])
-
-            # The distortion parameters
-            dist_matrix = np.zeros((4, 1), dtype=np.float64)
-
-            # Solve PnP
-            success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, dist_matrix)
-            body_success, body_rot_vec, body_trans_vec = cv2.solvePnP(body_3d, body_2d, cam_matrix, dist_matrix)
-            
-            # Get rotational matrix
-            rmat, jac = cv2.Rodrigues(rot_vec)
-            body_rmat, body_jac = cv2.Rodrigues(body_rot_vec)
-            
-            # Get angles
-            angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
-            body_angles, body_mtxR, body_mtxQ, body_Qx, body_Qy, body_Qz = cv2.RQDecomp3x3(body_rmat)
-            
-            # Get the y rotation degree
-            x = angles[0] * 360
-            y = angles[1] * 360
-            z = angles[2] * 360
-            body_x = body_angles[0] * 360
-            body_y = body_angles[1] * 360
-            body_z = body_angles[2] * 360
-        
-            # See where the user's head tilting
-            if y < -10:
-                text = "Looking Right"
-            elif y > 10:
-                text = "Looking Left"
-            elif x < -10:
-                text = "Looking Down"
-            elif x > 10:
-                text = "Looking Up"
-            else:
-                text = "Looking Forward"
-            if body_x < -10:
-                body_text = "Body Right"
-                print("Body Right")
-                serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
-            elif body_x > 10:
-                body_text = "Body Left"
-                print("Body Left")
-                serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
-            else:
-                body_text = "Body Forward"
-                print("Body Forward")
-                serial_communication("GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
-
-            featuresTable[f'body_direction'].append(body_text)
-            featuresTable[f'head_direction'].append(text)
-            
-            # if the head direction values are more than 300, compute the most frequent value and send it to the arduino
-            # print("len(featuresTable[f'head_direction']): ", len(featuresTable[f'head_direction']))
-            if len(featuresTable[f'head_direction']) > 30:
-                # take the last 300 values
-                features = featuresTable[f'head_direction'][-30:]
-                values_count = pd.Series(features).value_counts()
-        
-                most_frequent_head_direction = values_count.idxmax()
-                print("Most frequent head direction: ", most_frequent_head_direction)
-                if most_frequent_head_direction == "Looking Forward":
-                    serial_communication("GOOD_HEAD_DIRECTION", LAST_MESSAGE, 0)
-                else:
-                    serial_communication("BAD_HEAD_DIRECTION", LAST_MESSAGE, most_frequent_head_direction)
+    
+    if results.face_landmarks is not None:
+        face_landmarks = results.face_landmarks
+        for idx, lm in enumerate(face_landmarks.landmark):
+            if idx in [33, 263, 1, 61, 291, 199]:
+                if idx == 1:
+                    nose_2d = (lm.x * img_w, lm.y * img_h)
+                    nose_3d = (lm.x * img_w, lm.y * img_h, lm.z * 3000)
                     
-            
-            # Display the nose and body direction
-            nose_3d_projection, jacobian = cv2.projectPoints(nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
-            body_3d_projection, body_jacobian = cv2.projectPoints(body_3d, body_rot_vec, body_trans_vec, cam_matrix, dist_matrix)
+                x, y = int(lm.x * img_w), int(lm.y * img_h)
 
-            p1 = (int(nose_2d[0]), int(nose_2d[1]))
-            p2 = (int(nose_2d[0] + y * 10) , int(nose_2d[1] - x * 10))
-                        
-            cv2.line(image, p1, p2, (255, 0, 0), 3)
-            
+                # Get the 2D Coordinates
+                face_2d.append([x, y])
+                # Get the 3D Coordinates
+                face_3d.append([x, y, lm.z])
+        
+        for landmark in ["LEFT_SHOULDER", "RIGHT_SHOULDER", "LEFT_HIP", "RIGHT_HIP"]:
+            x, y = int(dataTable[f'{landmark}_x'][-1] * img_w), int(dataTable[f'{landmark}_y'][-1] * img_h)
+            # Get the 2D Coordinates
+            body_2d.append([x, y])
+            # Get the 3D Coordinates
+            body_3d.append([x, y, dataTable[f'{landmark}_z'][-1]])
+        
+        # Convert lists to NumPy arrays
+        face_2d = np.array(face_2d, dtype=np.float64)
+        body_2d = np.array(body_2d, dtype=np.float64)
+        face_3d = np.array(face_3d, dtype=np.float64)
+        body_3d = np.array(body_3d, dtype=np.float64)
+        
+        # Camera matrix
+        focal_length = 1 * img_w
+        cam_matrix = np.array([[focal_length, 0, img_h / 2],
+                               [0, focal_length, img_w / 2],
+                               [0, 0, 1]])
 
+        # Distortion parameters
+        dist_matrix = np.zeros((4, 1), dtype=np.float64)
 
-            # Add text and lines to the image
-            cv2.putText(image, text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-            cv2.putText(image, "x: " + str(np.round(x, 2)), (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            cv2.putText(image, "y: " + str(np.round(y, 2)), (500, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            cv2.putText(image, "z: " + str(np.round(z, 2)), (500, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                
-    serial_communication("HEAD", LAST_MESSAGE, y)
-    return text, y
+        # Solve PnP
+        success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, dist_matrix)
+        body_success, body_rot_vec, body_trans_vec = cv2.solvePnP(body_3d, body_2d, cam_matrix, dist_matrix)
+
+        # Get rotational matrix
+        rmat, _ = cv2.Rodrigues(rot_vec)
+        body_rmat, _ = cv2.Rodrigues(body_rot_vec)
+
+        # Get angles
+        angles, _, _, _, _, _ = cv2.RQDecomp3x3(rmat)
+        body_angles, _, _, _, _, _ = cv2.RQDecomp3x3(body_rmat)
+
+        # Get the y rotation degree
+        x = angles[0] * 360
+        y = angles[1] * 360
+        z = angles[2] * 360
+        body_x = body_angles[0] * 360
+        body_y = body_angles[1] * 360
+        body_z = body_angles[2] * 360
+
+        # See where the user's head tilting
+        if y < -10:
+            text = "Looking Right"
+        elif y > 10:
+            text = "Looking Left"
+        elif x < -10:
+            text = "Looking Down"
+        elif x > 10:
+            text = "Looking Up"
+        else:
+            text = "Looking Forward"
+        if body_y < -10:
+            body_text = "Body Right"
+            LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
+        elif body_y > 10:
+            body_text = "Body Left"
+            LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
+        else:
+            body_text = "Body Forward"
+            LAST_MESSAGE = serial_communication("GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
+        print(body_y)
+
+        featuresTable[f'body_direction'].append(body_text)
+        featuresTable[f'head_direction'].append(text)
+
+        if len(featuresTable[f'head_direction']) > 30:
+            features = featuresTable[f'head_direction'][-120:]
+            values_count = pd.Series(features).value_counts()
+            most_frequent_head_direction = values_count.idxmax()
+            # print("Most frequent head direction: ", most_frequent_head_direction)
+            if most_frequent_head_direction == "Looking Forward":
+                # print("sent message to the arduino, good head direction")
+                LAST_MESSAGE = serial_communication("GOOD_HEAD_DIRECTION", LAST_MESSAGE, 0)
+            else:
+                # print("sent message to the arduino, bad head direction")
+                LAST_MESSAGE = serial_communication("BAD_HEAD_DIRECTION", LAST_MESSAGE, most_frequent_head_direction)
+
+        # Display the nose and body direction
+        nose_3d_projection, _ = cv2.projectPoints(nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
+        body_3d_projection, _ = cv2.projectPoints(body_3d, body_rot_vec, body_trans_vec, cam_matrix, dist_matrix)
+
+        p1 = (int(nose_2d[0]), int(nose_2d[1]))
+        p2 = (int(nose_2d[0] + y * 10), int(nose_2d[1] - x * 10))
+
+        cv2.line(image, p1, p2, (255, 0, 0), 3)
+
+        # Add text and lines to the image
+        cv2.putText(image, text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+        cv2.putText(image, "x: " + str(np.round(x, 2)), (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(image, "y: " + str(np.round(y, 2)), (500, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(image, "z: " + str(np.round(z, 2)), (500, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+    # LAST_MESSAGE = serial_communication("HEAD", LAST_MESSAGE, y)
+    return text
         
 def body_settings(client_socket, dataTable, LAST_MESSAGE): # function to set the body of the user as the standard one
     user_body = dataTable.copy()
@@ -406,15 +399,15 @@ def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle
 def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable):
     # calculate the distance between the hands
     hands_distance = abs(dataTable[f'LEFT_WRIST_x'][-1] - dataTable[f'RIGHT_WRIST_x'][-1]) + abs(dataTable[f'LEFT_WRIST_y'][-1] - dataTable[f'RIGHT_WRIST_y'][-1]) + abs(dataTable[f'LEFT_WRIST_z'][-1] - dataTable[f'RIGHT_WRIST_z'][-1])
-    #print("hands_distance: ", hands_distance)
-    if hands_distance < 0.1:
-        LAST_MESSAGE = serial_communication(1, LAST_MESSAGE, hands_distance)
+    # print("hands_distance: ", hands_distance)
+    if hands_distance < 0.5:
+        LAST_MESSAGE = serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands touching")
-        serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
+        # serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
     else:
-        LAST_MESSAGE = serial_communication(0, LAST_MESSAGE, hands_distance)
+        LAST_MESSAGE = serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands not touching")
-        serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
+        # serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
     return hands_distance
 
 def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable):
@@ -425,11 +418,11 @@ def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable):
         hands_are_visible = False
         featuresTable[f'hands_visibility'].append("Hands not visible")
         #print("Hands not visible")
-        serial_communication("HANDS_NOT_VISIBILITY", LAST_MESSAGE, 0)
+        LAST_MESSAGE = serial_communication("HANDS_NOT_VISIBILITY", LAST_MESSAGE, 0)
     else:
         hands_are_visible = True
         featuresTable[f'hands_visibility'].append("Hands visible")
-        serial_communication("HANDS_VISIBILITY", LAST_MESSAGE, 0)
+        LAST_MESSAGE = serial_communication("HANDS_VISIBILITY", LAST_MESSAGE, 0)
         #print("Hands visible")
     
     
@@ -481,7 +474,7 @@ def mediaPipe(client_socket, ssi_is_connected):
     # Savgol filter parameters
     window_length = 17
     polyorder = 2
-    LAST_MESSAGE = False
+    LAST_MESSAGE = [0,0,0,0,0]
 
     landmarks_name = ['NOSE', 'LEFT_SHOULDER', 'RIGHT_SHOULDER', 'LEFT_ELBOW', 'RIGHT_ELBOW', 'LEFT_WRIST', 'RIGHT_WRIST',
                       'LEFT_PINKY', 'RIGHT_PINKY', 'LEFT_INDEX', 'RIGHT_INDEX', 'LEFT_THUMB', 'RIGHT_THUMB', 'LEFT_HIP',
@@ -529,7 +522,7 @@ def mediaPipe(client_socket, ssi_is_connected):
                 
                 # Make Detections
                 results = holistic.process(image)
-                Faceresults = face_mesh.process(image)
+                # Faceresults = face_mesh.process(image)
                 # Recolor image back to BGR for rendering
                 image.flags.writeable = True
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -539,7 +532,9 @@ def mediaPipe(client_socket, ssi_is_connected):
                 face_3d = []
                 face_2d = []
                 # Pose Detections
-                landmarks = results.pose_landmarks.landmark
+                landmarks = results.pose_world_landmarks.landmark
+                # Faceresults = results.face_landmarks
+                
                 if not is_online:
                     video_is_over, frame_counter = offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap)
 
@@ -608,7 +603,7 @@ def mediaPipe(client_socket, ssi_is_connected):
                     touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable)
                     hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable)
                     # call a function that do the head inclination detection
-                    headAlert, head_y = bodyAndFace_inclination(client_socket, Faceresults, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable)
+                    headAlert = bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable)
                     # create and update the csv file with the data
                     
                 ##################################################################################
@@ -678,7 +673,7 @@ def mediaPipe(client_socket, ssi_is_connected):
     cap.release()
     cv2.destroyAllWindows()
     
-    offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
+    # offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
     manage_socket(HOST, PORT, ssi_is_connected, "stop")
 
 
