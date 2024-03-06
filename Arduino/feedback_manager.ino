@@ -148,7 +148,7 @@ void Device::setPace(int pace)
   }
   else
   {
-    this->pace = abs(this->valueToReach - this->actualValue);
+    this->pace = max(abs(this->valueToReach - this->actualValue), this->max_intensity - this->min_intensity);
   }
 }
 
@@ -171,8 +171,8 @@ void Device::setMaxIntensity(int max_intensity)
 void Device::setDevice(PatternMode mode, int min_intensity, int max_intensity)
 {
   this->mode = mode;
-  this->min_intensity = min_intensity;
-  this->max_intensity = max_intensity;
+  this->min_intensity = min(min_intensity, max_intensity);
+  this->max_intensity = max(min_intensity, max_intensity);
 
   switch (this->mode)
   {
@@ -419,10 +419,10 @@ void printVibrationState(int code)
   Serial.print(" Level=");
   Serial.print(vHandlers[code].getActualValue());
 
-  if (vHandlers[code].getActualValue() != vHandlers[code].getActualValue())
+  if (vHandlers[code].getActualValue() != vHandlers[code].getValueToReach())
   {
     Serial.print(" LToReach=");
-    Serial.print(pHandlers[code].getValueToReach());
+    Serial.print(vHandlers[code].getValueToReach());
   }
 
   Serial.print(" Pace=");
@@ -505,8 +505,8 @@ void loop()
     count = 0;
     while (devicesIndex[count] != -1 && count < pCells + vMotors)
     {
-      vHandlers[count].setDevice(pattern, min_intensity, max_intensity);
-      vHandlers[count].setPace(pace);
+      vHandlers[devicesIndex[count]].setDevice(pattern, min_intensity, max_intensity);
+      vHandlers[devicesIndex[count]].setPace(pace);
       devicesIndex[count] = -1;
       count++;
     }
