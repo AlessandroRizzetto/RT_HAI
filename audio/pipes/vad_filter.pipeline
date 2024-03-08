@@ -19,16 +19,16 @@
 		<output channel="audio-down" pin="audio-down"/>
 	</transformer>
 
-	<gate close="$(vad:tresh:calibration)">
-		<transformer create="PythonFeature:python-vad" script="vad" syspath="..\scripts" optsstr="vad_tresh=$(vad:tresh);vad_calibration=$(vad:tresh:calibration)">
+	<gate close="$(calibration:vad:tresh)">
+		<transformer create="PythonFeature:python-vad" script="vad" syspath="..\scripts" optsstr="vad_tresh=$(vad:tresh);vad_calibration=$(calibration:vad:tresh)">
 			<input pin="audio-down" frame="0.1s"/>
 			<output pin="python-vad"/>
 		</transformer>
 	</gate>
-	<gate open="$(vad:tresh:calibration)">
-		<transformer create="PythonFeature:python-vad" script="vad" syspath="..\scripts" optsstr="vad_tresh=$(vad:tresh);vad_calibration=$(vad:tresh:calibration)">
+	<gate open="$(calibration:vad:tresh)">
+		<transformer create="PythonFeature:python-vad" script="vad" syspath="..\scripts" optsstr="vad_tresh=$(vad:tresh);vad_calibration=$(calibration:vad:tresh)">
 			<input pin="audio-down" frame="0.1s"/>
-			<listen address="KeyEvent@Keyboard"/>
+			<listen address="calibration@vad"/>
 			<output pin="python-vad"/>
 		</transformer>
 	</gate>
