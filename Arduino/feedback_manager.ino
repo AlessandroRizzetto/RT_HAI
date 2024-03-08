@@ -1,9 +1,10 @@
-#define motorpin_wl 3
-#define motorpin_wr 5
-#define motorpin_bl 6
-#define motorpin_br 9
-#define peltier_neck 10
-#define peltier_chest 11
+// Nodemcu v3 HUZZAH ESP8266 pinout
+#define motorpin_wl 5    // D1
+#define motorpin_wr 4    // D2
+#define motorpin_bl 0    // D3
+#define motorpin_br 2    // D4
+#define peltier_neck 14  // D5
+#define peltier_chest 12 // D6
 
 // DATA DEFINITIONs
 
@@ -433,6 +434,14 @@ void printVibrationState(int code)
 void setup()
 {
   Serial.begin(9600);
+
+  pinMode(motorpin_wl, OUTPUT);
+  pinMode(motorpin_wr, OUTPUT);
+  pinMode(motorpin_bl, OUTPUT);
+  pinMode(motorpin_br, OUTPUT);
+
+  pinMode(peltier_neck, OUTPUT);
+  pinMode(peltier_chest, OUTPUT);
 
   // Peltier setup
   for (int i = 0; i < pCells; i++)
