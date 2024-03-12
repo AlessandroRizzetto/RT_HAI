@@ -4,7 +4,16 @@ features:mffc = false
 # $(string) user class/identifier
 user:class = CLASSE
 
-# $(boolean) store features extracted on file
+# (bool) calibration of user
+calibration:user = false
+
+# $(string) if user calibration is selected, use this path to store features
+calibration:user:file:path = ..\data\userCalibration.csv
+
+# $(boolean) if user calibration is selected and there exists another file in the same path, overwrites it
+calibration:user:file:new = true
+
+# $(boolean) if user calibration is not selected, store features extracted on file
 output:file:save = true
 
 # $(string) if features storage is selected, use this path to store features
