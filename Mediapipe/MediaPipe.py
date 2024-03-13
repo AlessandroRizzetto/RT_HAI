@@ -213,13 +213,34 @@ def normalize(value): # to adapt when we will have the real values from experime
 #         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE)
 #     else:
 #         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE) 
+# def nose_test(client_socket, dataTable, LAST_MESSAGE): # function to test basic script's functionalities
+#     # test 
+#     nose_test = 1 - dataTable[f'{"NOSE"}_y'][-1]
+#     # send data to the server
+#     send_data_network(client_socket, str(
+#         nose_test) + "\n")
+#     if dataTable[f'{"NOSE"}_y'][-1] < 0.5:
+#         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE)
+#     else:
+#         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE) 
     
         
 
 def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable):
+def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable):
     body_2d = []
     body_3d = []
     text = ""
+    
+    if results.face_landmarks is not None:
+        face_landmarks = results.face_landmarks
+        for idx, lm in enumerate(face_landmarks.landmark):
+            if idx in [33, 263, 1, 61, 291, 199]:
+                if idx == 1:
+                    nose_2d = (lm.x * img_w, lm.y * img_h)
+                    nose_3d = (lm.x * img_w, lm.y * img_h, lm.z * 3000)
+                    
+                x, y = int(lm.x * img_w), int(lm.y * img_h)
     
     if results.face_landmarks is not None:
         face_landmarks = results.face_landmarks
@@ -254,7 +275,32 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
         cam_matrix = np.array([[focal_length, 0, img_h / 2],
                                [0, focal_length, img_w / 2],
                                [0, 0, 1]])
+                # Get the 2D Coordinates
+                face_2d.append([x, y])
+                # Get the 3D Coordinates
+                face_3d.append([x, y, lm.z])
+        
+        for landmark in ["LEFT_SHOULDER", "RIGHT_SHOULDER", "LEFT_HIP", "RIGHT_HIP"]:
+            x, y = int(dataTable[f'{landmark}_x'][-1] * img_w), int(dataTable[f'{landmark}_y'][-1] * img_h)
+            # Get the 2D Coordinates
+            body_2d.append([x, y])
+            # Get the 3D Coordinates
+            body_3d.append([x, y, dataTable[f'{landmark}_z'][-1]])
+        
+        # Convert lists to NumPy arrays
+        face_2d = np.array(face_2d, dtype=np.float64)
+        body_2d = np.array(body_2d, dtype=np.float64)
+        face_3d = np.array(face_3d, dtype=np.float64)
+        body_3d = np.array(body_3d, dtype=np.float64)
+        
+        # Camera matrix
+        focal_length = 1 * img_w
+        cam_matrix = np.array([[focal_length, 0, img_h / 2],
+                               [0, focal_length, img_w / 2],
+                               [0, 0, 1]])
 
+        # Distortion parameters
+        dist_matrix = np.zeros((4, 1), dtype=np.float64)
         # Distortion parameters
         dist_matrix = np.zeros((4, 1), dtype=np.float64)
 
@@ -322,7 +368,19 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
         p2 = (int(nose_2d[0] + y * 10), int(nose_2d[1] - x * 10))
 
         cv2.line(image, p1, p2, (255, 0, 0), 3)
+        p1 = (int(nose_2d[0]), int(nose_2d[1]))
+        p2 = (int(nose_2d[0] + y * 10), int(nose_2d[1] - x * 10))
 
+        cv2.line(image, p1, p2, (255, 0, 0), 3)
+
+        # Add text and lines to the image
+        cv2.putText(image, text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+        cv2.putText(image, "x: " + str(np.round(x, 2)), (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(image, "y: " + str(np.round(y, 2)), (500, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(image, "z: " + str(np.round(z, 2)), (500, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+    # LAST_MESSAGE = serial_communication("HEAD", LAST_MESSAGE, y)
+    return text
         # Add text and lines to the image
         cv2.putText(image, text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
         cv2.putText(image, "x: " + str(np.round(x, 2)), (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
@@ -389,11 +447,17 @@ def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable):
     # print("hands_distance: ", hands_distance)
     if hands_distance < 0.5:
         LAST_MESSAGE = serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
+    # print("hands_distance: ", hands_distance)
+    if hands_distance < 0.5:
+        LAST_MESSAGE = serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands touching")
+        # serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
         # serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
     else:
         LAST_MESSAGE = serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
+        LAST_MESSAGE = serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands not touching")
+        # serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
         # serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
     return hands_distance
 
@@ -406,9 +470,11 @@ def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable):
         featuresTable[f'hands_visibility'].append("Hands not visible")
         #print("Hands not visible")
         LAST_MESSAGE = serial_communication("HANDS_NOT_VISIBILITY", LAST_MESSAGE, 0)
+        LAST_MESSAGE = serial_communication("HANDS_NOT_VISIBILITY", LAST_MESSAGE, 0)
     else:
         hands_are_visible = True
         featuresTable[f'hands_visibility'].append("Hands visible")
+        LAST_MESSAGE = serial_communication("HANDS_VISIBILITY", LAST_MESSAGE, 0)
         LAST_MESSAGE = serial_communication("HANDS_VISIBILITY", LAST_MESSAGE, 0)
         #print("Hands visible")
     
@@ -462,6 +528,7 @@ def mediaPipe(client_socket, ssi_is_connected):
     window_length = 17
     polyorder = 2
     LAST_MESSAGE = [0,0,0,0,0]
+    LAST_MESSAGE = [0,0,0,0,0]
 
     landmarks_name = ['NOSE', 'LEFT_SHOULDER', 'RIGHT_SHOULDER', 'LEFT_ELBOW', 'RIGHT_ELBOW', 'LEFT_WRIST', 'RIGHT_WRIST',
                       'LEFT_PINKY', 'RIGHT_PINKY', 'LEFT_INDEX', 'RIGHT_INDEX', 'LEFT_THUMB', 'RIGHT_THUMB', 'LEFT_HIP',
@@ -510,6 +577,7 @@ def mediaPipe(client_socket, ssi_is_connected):
                 # Make Detections
                 results = holistic.process(image)
                 # Faceresults = face_mesh.process(image)
+                # Faceresults = face_mesh.process(image)
                 # Recolor image back to BGR for rendering
                 image.flags.writeable = True
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -519,6 +587,9 @@ def mediaPipe(client_socket, ssi_is_connected):
                 face_3d = []
                 face_2d = []
                 # Pose Detections
+                landmarks = results.pose_world_landmarks.landmark
+                # Faceresults = results.face_landmarks
+                
                 landmarks = results.pose_world_landmarks.landmark
                 # Faceresults = results.face_landmarks
                 
@@ -591,6 +662,7 @@ def mediaPipe(client_socket, ssi_is_connected):
                     hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable)
                     # call a function that do the head inclination detection
                     headAlert = bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable)
+                    headAlert = bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable)
                     # create and update the csv file with the data
                     
                 ##################################################################################
@@ -660,6 +732,7 @@ def mediaPipe(client_socket, ssi_is_connected):
     cap.release()
     cv2.destroyAllWindows()
     
+    # offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
     # offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
     manage_socket(HOST, PORT, ssi_is_connected, "stop")
 

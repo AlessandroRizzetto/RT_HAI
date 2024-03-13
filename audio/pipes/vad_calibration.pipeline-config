@@ -1,0 +1,2 @@
+# $(bool) calibration of vad
+calibration:event:monitor = true

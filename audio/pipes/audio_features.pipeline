@@ -16,7 +16,7 @@
 	Here we use the OpenSMILE library to extract features from the audio signal.
 	We extract the following features:
 	- Pitch: `PythonFeature` (filter)
-	- Energy: `OSEnergy` (feature)
+	- Root-mean-square energy: `OSEnergy` (feature)
 	- Loudness: `PythonFeature` (feature)
 	- Jitter: `PythonFeature` (feature)
 	- Shimmer: `PythonFeature` (feature)
@@ -26,8 +26,8 @@
 	- Spectral Slope 0-500: `PythonFeature` (feature)
 	- MFCC: `OSMfccChain` (feature, optional if `features:mffc=true`)
 	-->
-	<transformer create="OSEnergy:energy">
-		<input pin="vad-audio" frame="0.3s" delta="0.15s"/>
+	<transformer create="OSEnergy:energy" type="0">
+		<input pin="vad-audio" frame="1s" delta="0.5s"/>
 		<output pin="energy"/>
 	</transformer>
 	<transformer create="PythonFeature:loudness" script="opensmile_manager" syspath="..\scripts" optsstr="feature=loudness_sma3_amean">
@@ -69,9 +69,11 @@
 		</transformer>
 	</gate>
 
-	<object create="EventMonitor:monitor" title="Events">
-		<listen address="vad@audio" span="10000"/>
-	</object>
+	<gate open="$(output:visualization:debug)">
+		<object create="EventMonitor:monitor" title="Events">
+			<listen address="vad@audio" span="10000"/>
+		</object>
+	</gate>
 	<!---->
 
 	<!-- # Playback and Visualization
@@ -93,25 +95,25 @@
 	<consumer create="SignalPainter:plot-f-pitch" title="PITCH" type="5">
 		<input pin="pitch" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-energy" size="10" title="ENERGY" type="4">
-		<input pin="energy" frame="0.3s" delta="0.15s" />
+	<consumer create="SignalPainter:plot-f-h-energy" size="10" title="ENERGY" type="5">
+		<input pin="energy" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-jitter" title="JITTER" type="5">
+	<consumer create="SignalPainter:plot-f-h-jitter" title="JITTER" type="5">
 		<input pin="jitter" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-shimmer" title="SHIMMER" type="5">
+	<consumer create="SignalPainter:plot-f-h-shimmer" title="SHIMMER" type="5">
 		<input pin="shimmer" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-alpha-ratio" size="10" title="ALPHA RATIO" type="4">
+	<consumer create="SignalPainter:plot-f-h-alpha-ratio" size="10" title="ALPHA RATIO" type="4">
 		<input pin="alpha-ratio" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-hammarberg-index" size="10" title="HAMMARBERG INDEX" type="4">
+	<consumer create="SignalPainter:plot-f-h-hammarberg-index" size="10" title="HAMMARBERG INDEX" type="4">
 		<input pin="hammarberg-index" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-spectral-slope" size="10" title="SPECTRAL SLOPE" type="4">
+	<consumer create="SignalPainter:plot-f-h-spectral-slope" size="10" title="SPECTRAL SLOPE" type="4">
 		<input pin="spectral-slope" frame="1s" delta="0.5s" />
 	</consumer>
-	<consumer create="SignalPainter:plot-f-spectral-flux" size="10" title="SPECTRAL FLUX" type="5">
+	<consumer create="SignalPainter:plot-f-h-spectral-flux" size="10" title="SPECTRAL FLUX" type="5">
 		<input pin="spectral-flux" frame="1s" delta="0.5s" />
 	</consumer>
 	<consumer create="SignalPainter:plot-vad" title="VAD" size="10" type="2">
@@ -123,34 +125,71 @@
 		</consumer>
 	</gate>
 
-	<gate close="$(features:mffc)">
-		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="0,0,400,300">plot-audio</area>
-			<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
-			<area pos="400,0,400,300">plot-vad</area>
-			<area pos="900,0,600,800">monitor</area>
-		</object>
+	<gate open="$(output:visualization:debug)">
+		<gate close="$(features:mffc)">
+			<object create="Decorator" icon="true" title="Pipeline">
+				<area pos="0,0,400,300">plot-audio</area>
+				<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
+				<area pos="400,0,400,300">plot-vad</area>
+				<area pos="900,0,600,800">monitor</area>
+			</object>
+		</gate>
+		<gate open="$(features:mffc)">
+			<object create="Decorator" icon="true" title="Pipeline">
+				<area pos="0,0,400,300">plot-audio</area>
+				<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
+				<area pos="400,0,400,300">plot-vad</area>
+				<area pos="600,300,400,300">plot-mffc</area>
+				<area pos="1100,0,400,800">monitor</area>
+			</object>
+		</gate>
 	</gate>
-	<gate open="$(features:mffc)">
+	<gate close="$(output:visualization:debug)">
 		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="0,0,400,300">plot-audio</area>
-			<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
-			<area pos="400,0,400,300">plot-vad</area>
-			<area pos="600,300,400,300">plot-mffc</area>
-			<area pos="1100,0,400,800">monitor</area>
+			<area pos="100,100,250,650">plot-f-loudness</area>
+			<area pos="450,100,250,650">plot-f-pitch</area>
+			<area pos="1000,0,400,150">plot-audio</area>
+			<area pos="1000,150,400,150">plot-vad</area>
+			<area pos="900,300,600,600" nv="2" nh="4">plot-f-h-*</area>
 		</object>
 	</gate>
 	<!---->
 
 	<!-- # Storage of features
 	
-	Finally, if specified by the config variable `output:file:save` (eventually specifying also if you want a new file with `output:file:new`), the features are stored in a file (path specified in `output:file:path`).
+	Finally, if this isn't a calibration (specified by calibration:user) and if specified by the config variable `output:file:save` (eventually specifying also if you want a new file with `output:file:new`), the features are stored in a file (path specified in `output:file:path`).
 	The config variable `user:class` is used to specify the class/identifier of the user.
 	All values of features with the lower framerate are saved. Instead, features with higher framerate are first filtered with savgolf_filter and then averaged to obtain values in correspondence of the ones just mentioned.
 	
 	-->
-	<gate open="$(output:file:save)">
-		<consumer create="PythonConsumer" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class);file_path=$(output:file:path);new_file=$(output:file:new)">
+	<gate close="$(calibration:user)">
+		<gate open="$(output:file:save)">
+			<consumer create="PythonConsumer" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class);user_calibration=$(calibration:user);user_calibration_file_path=$(calibration:user:file:path);new_user_calibration_file=$(calibration:user:file:new);file_path=$(output:file:path);new_file=$(output:file:new)">
+				<input pin="loudness" frame="1s" delta="0.15s" />
+				<xinput size="7">
+					<input pin="pitch" />
+					<input pin="energy" />
+					<input pin="jitter" />
+					<input pin="shimmer" />
+					<input pin="alpha-ratio" />
+					<input pin="hammarberg-index" />
+					<input pin="spectral-flux" />
+					<input pin="spectral-slope" />
+				</xinput>
+			</consumer>
+		</gate>
+	</gate>
+	<!---->
+
+	<!-- # User Calibration
+	
+	If specified by the config variable `calibration:user` (eventually specifying also if you want a new file with `calibration:user:file:new`), we can create a calibration for a user.
+	In fact we can store the means of the features (filtered with savgolf_filter) in a file (path specified in `calibration:user:file:path`).
+	As before, the config variable `user:class` is used to specify the class/identifier of the user.
+
+	-->
+	<gate open="$(calibration:user)">
+		<consumer create="PythonConsumer" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class);mean=true;file_path=$(calibration:user:file:path);new_file=$(calibration:user:file:new)">
 			<input pin="loudness" frame="1s" delta="0.15s" />
 			<xinput size="7">
 				<input pin="pitch" />

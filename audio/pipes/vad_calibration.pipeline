@@ -5,10 +5,27 @@
 	<register>
 		<load name="event" />
 		<load name="graphic" />
-		<load name="keyboard" />
+		<load name="ioput"/>
 	</register>
 
-	<runnable create="Keyboard" Eager="false" WaitForEnter="true" />
+	<!-- server
+	
+	We set up a server here, it will send a sync message on port 1111 to all 
+	machines in the network.
+	
+	-->
+	<framework sync="true" slisten="false" sport="1111" sdialog="true"/>
+	<!---->
+
+	<!-- socket receiver 
+	
+	Reads from a socket port and feeds the received signal into the
+	pipeline. Use this component to receive signals from external applications.
+	Make sure to adjust the options to fit the incoming signal.
+	
+	-->
+	<object create="SocketEventReader" port="3333" address="calibration@vad" />
+	<!---->
 
 	<include path=".\vad_filter.pipeline"/>
 
@@ -18,22 +35,28 @@
 	<consumer create="SignalPainter:plot-audio" title="AUDIO" size="10" type="2">
 		<input pin="audio" frame="0.3s" />
 	</consumer>
-	<object create="EventPainter:actual-tresh" title="ACTUAL TRESHOLD" type="1" autoscale="false" global="true" axisPrecision="2">
-		<listen address="vad-tresh@audio"/>
-	</object>
 	<consumer create="SignalPainter:plot-vad" title="VAD" size="10" type="2">
 		<input pin="vad-audio" frame="0.1s" />
 	</consumer>
 
 
-	<object create="EventMonitor:monitor" title="Events">
-		<listen address="vad-tresh,KeyEvent@audio,Keyboard" span="10000"/>
-	</object>
+	<gate open="$(calibration:event:monitor)">
+		<object create="EventMonitor:monitor" title="Events">
+			<listen address="vad-tresh,calibration@audio,vad" span="10000"/>
+		</object>
+	</gate>
 
-	<object create="Decorator" icon="true" title="Vad Calibration">
-		<area pos="0,0,400,300">plot-audio</area>
-		<area pos="400,0,200,300">actual-tresh</area>
-		<area pos="600,0,400,300">plot-vad</area>
-		<area pos="1100,0,400,800">monitor</area>
-	</object>
+	<gate open="$(calibration:event:monitor)">
+		<object create="Decorator" icon="true" title="Vad Calibration">
+			<area pos="0,0,400,300">plot-audio</area>
+			<area pos="400,0,400,300">plot-vad</area>
+			<area pos="1100,0,400,800">monitor</area>
+		</object>
+	</gate>
+	<gate close="$(calibration:event:monitor)">
+		<object create="Decorator" icon="true" title="Vad Calibration">
+			<area pos="0,0,400,300">plot-audio</area>
+			<area pos="400,0,400,300">plot-vad</area>
+		</object>
+	</gate>
 </pipeline>

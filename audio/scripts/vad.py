@@ -132,7 +132,7 @@ def update(event, board, opts, vars):
         vars (dictionary<string,any>): internal variables of the component
     '''
 
-    if vars['loaded'] and opts['vad_calibration'] and event.address == 'KeyEvent@Keyboard':
+    if vars['loaded'] and opts['vad_calibration'] and event.address == 'calibration@vad':
         try:
             tmp = float(event.data)
             if tmp < 0 or tmp > 1:
