@@ -1,5 +1,5 @@
 # $(bool) calibration of vad
-vad:tresh:calibration = true
+vad:tresh:calibration = false
 
 # $(float) treshold based on the confidence of the vad (0-1)
 vad:tresh = 0.45
