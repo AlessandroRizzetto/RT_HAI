@@ -8,7 +8,6 @@ from matplotlib.widgets import Button, Slider
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 3333      # The port used by the server
-SYNC = 1111
 
 def check_trehshold(tresh):
     if init_tresh < 0 or init_tresh > 1:
@@ -90,10 +89,14 @@ if __name__ == "__main__":
     mngr.window.setGeometry(250,350,300,400)
 
     # Start the socket
-    client_socket = sh.manage_socket(HOST, PORT, "start")
+    client_socket = sh.create_socket(HOST, PORT, "send")
     if client_socket is None:
         print("Error starting the socket")
         sys.exit(1)
     else:
         # Show the plot
         plt.show()
+
+        # Close the socket
+        client_socket.close()
+        print("Socket closed")
