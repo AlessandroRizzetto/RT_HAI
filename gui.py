@@ -41,12 +41,17 @@ def start_analysis(check1, check2):
     check1 = check1.get()
     check2 = check2.get()
     if (check1 == 1 and check2 == 1 and m is None and p is None):
-        p = Popen(['powershell', 'xmlpipe.exe -config global ..\audio\pipes\main.pipeline'], shell=True, stdin=PIPE)
+        # mostro i file nella cartella corrente
+        # subprocess.run('dir /audio/pipes/', shell=True)
+        command = ['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline']
+        p = Popen(command, shell=True, stdin=PIPE)
         m = Popen(['powershell', 'python3 ..\Mediapipe\MediaPipe.py'], shell=True, stdin=PIPE)
     if (check1 == 1 and check2 == 0) or (check1 == 1 and check2 == 1 and p is not None):
         m = Popen(['powershell', 'python3 ..\Mediapipe\MediaPipe.py'], shell=True, stdin=PIPE)
     if (check1 == 0 and check2 == 1 or (check1 == 1 and check2 == 1 and m is not None)):
-        p = Popen(['powershell', 'xmlpipe.exe -config global ..\audio\pipes\main.pipeline'], shell=True, stdin=PIPE)
+        # subprocess.run('dir /audio/pipes/', shell=True)
+        command = ['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline']
+        p = Popen(command, shell=True, stdin=PIPE)
     return m, p
     
 def stop_analysis(m, p):
@@ -60,7 +65,9 @@ def stop_analysis(m, p):
         except Exception as e:
             print(f"Errore durante la terminazione del processo video: {e}")
     if p is not None:
-        p.communicate(input='\n'.encode())  # Termina il processo audio normalmente
+        
+        p.communicate(input='\n'.encode())
+        
     
     
 

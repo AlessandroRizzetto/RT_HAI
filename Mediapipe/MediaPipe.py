@@ -28,15 +28,15 @@ is_online = sys.argv[2] if len(sys.argv) > 2 else 1
 configuration_time = sys.argv[3] if len(sys.argv) > 3 else 5
 
 
-try: # to check if the arduino is connected to the PC and manage errors related to the serial communication
-    ser = serial.Serial('COM5', 9600, timeout=1)
-    ser.flush()
-    ser.reset_input_buffer()
-    arduino_is_connected = True
-except serial.SerialException as e:
-    print("The Arduino is not connected to the PC, using the test mode")
-    arduino_is_connected = False
-    pass
+# try: # to check if the arduino is connected to the PC and manage errors related to the serial communication
+#     ser = serial.Serial('COM5', 9600, timeout=1)
+#     ser.flush()
+#     ser.reset_input_buffer()
+#     arduino_is_connected = True
+# except serial.SerialException as e:
+#     print("The Arduino is not connected to the PC, using the test mode")
+#     arduino_is_connected = False
+#     pass
 
 
 
@@ -71,70 +71,58 @@ def manage_socket(host, port, ssi_is_connected, state):
 def serial_communication(message, LAST_MESSAGE, value, arduino_is_connected = arduino_is_connected):
     # --- ARDUINO-PC SERIAL COMMUNICATION SECTION --
     # COM4 is the port number of the Arduino
-    if arduino_is_connected:
-        # print(LAST_MESSAGE, message)
+    # if arduino_is_connected:
+    #     # print(LAST_MESSAGE, message)
         
-        if message == "HANDS_NOT_VISIBILITY" and LAST_MESSAGE[0] == 0:
-            ser.write(f"<v,4,1,30,60,10>\n".encode('utf-8')) # sinusoide
-            print("Message sent to the arduino, hands not visible")
-            LAST_MESSAGE[0] = 1
-        if message == "HANDS_VISIBILITY" and LAST_MESSAGE[0] == 1:
-            ser.write(f"<v,4,1,0,0,0>\n".encode('utf-8'))
-            print("Message sent to the arduino, hands visible")
-            LAST_MESSAGE[0] = 0
+    #     if message == "HANDS_NOT_VISIBILITY" and LAST_MESSAGE[0] == 0:
+    #         ser.write(f"<v,4,1,10,40,10>\n".encode('utf-8')) # sinusoide
+    #         print("Message sent to the arduino, hands not visible")
+    #         LAST_MESSAGE[0] = 1
+    #     if message == "HANDS_VISIBILITY" and LAST_MESSAGE[0] == 1:
+    #         ser.write(f"<v,4,1,0,0,0>\n".encode('utf-8'))
+    #         print("Message sent to the arduino, hands visible")
+    #         LAST_MESSAGE[0] = 0
             
-        if message == "HANDS_TOUCHING" and LAST_MESSAGE[1] == 0:
-            ser.write(f"<v,4,0,40,40,0>\n".encode('utf-8'))
-            print("Message sent to the arduino, hands touching")
-            LAST_MESSAGE[1] = 1
-        if message == "HANDS_NOT_TOUCHING" and LAST_MESSAGE[1] == 1:
-            ser.write(f"<v,4,0,0,0,0>\n".encode('utf-8'))
-            print("Message sent to the arduino, hands not touching")
-            LAST_MESSAGE[1] = 0
+    #     if message == "HANDS_TOUCHING" and LAST_MESSAGE[1] == 0:
+    #         ser.write(f"<v,4,0,40,40,0>\n".encode('utf-8'))
+    #         print("Message sent to the arduino, hands touching")
+    #         LAST_MESSAGE[1] = 1
+    #     if message == "HANDS_NOT_TOUCHING" and LAST_MESSAGE[1] == 1:
+    #         ser.write(f"<v,4,0,0,0,0>\n".encode('utf-8'))
+    #         print("Message sent to the arduino, hands not touching")
+    #         LAST_MESSAGE[1] = 0
             
-        if message == "BAD_BODY_DIRECTION" and LAST_MESSAGE[2] == 0:
-            if value == "Body Right":
-                ser.write(f"<v,3,0,30,30,0>\n".encode('utf-8'))
-                print("Message sent to the arduino, body right")
-            elif value == "Body Left":
-                ser.write(f"<v,2,0,30,30,0>\n".encode('utf-8'))
-                print("Message sent to the arduino, body left")
-            LAST_MESSAGE[2] = 1
-        if message == "GOOD_BODY_DIRECTION" and LAST_MESSAGE[2] == 1:
-            ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
-            print("Message sent to the arduino, body forward")
-            LAST_MESSAGE[2] = 0
+    #     if message == "BAD_BODY_DIRECTION" and LAST_MESSAGE[2] == 0:
+    #         if value == "Body Right":
+    #             ser.write(f"<v,3,0,40,40,0>\n".encode('utf-8'))
+    #             print("Message sent to the arduino, body right")
+    #         elif value == "Body Left":
+    #             ser.write(f"<v,2,0,40,40,0>\n".encode('utf-8'))
+    #             print("Message sent to the arduino, body left")
+    #         LAST_MESSAGE[2] = 1
+    #     if message == "GOOD_BODY_DIRECTION" and LAST_MESSAGE[2] == 1:
+    #         ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
+    #         print("Message sent to the arduino, body forward")
+    #         LAST_MESSAGE[2] = 0
         
-        if message == "CROUCH" and LAST_MESSAGE[3] == 0:
-            ser.write(f"<v,5,1,20,40,0>\n".encode('utf-8'))
-            print("Message sent to the arduino, crouch")
-            LAST_MESSAGE[3] = 1
-        if message == "NOT_CROUCH" and LAST_MESSAGE[3] == 1:
-            ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
-            print("Message sent to the arduino, not crouch")
-            LAST_MESSAGE[3] = 0
+    #     if message == "CROUCH" and LAST_MESSAGE[3] == 0:
+    #         ser.write(f"<v,5,1,40,40,2>\n".encode('utf-8'))
+    #         print("Message sent to the arduino, crouch")
+    #         LAST_MESSAGE[3] = 1
+    #     if message == "NOT_CROUCH" and LAST_MESSAGE[3] == 1:
+    #         ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
+    #         print("Message sent to the arduino, not crouch")
+    #         LAST_MESSAGE[3] = 0
             
-        if message == "BAD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 0:
-            ser.write(f"<h,0,0,40,40,5>\n".encode('utf-8'))
-            print("Message sent to the arduino, head not forward")
-            LAST_MESSAGE[4] = 1
-        if message == "GOOD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 1:
-            ser.write(f"<h,0,0,0,0,5>\n".encode('utf-8'))
-            print("Message sent to the arduino, head forward")
-            LAST_MESSAGE[4] = 0
+    #     if message == "BAD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 0:
+    #         ser.write(f"<h,0,0,40,40,5>\n".encode('utf-8'))
+    #         print("Message sent to the arduino, head not forward")
+    #         LAST_MESSAGE[4] = 1
+    #     if message == "GOOD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 1:
+    #         ser.write(f"<h,0,0,0,0,5>\n".encode('utf-8'))
+    #         print("Message sent to the arduino, head forward")
+    #         LAST_MESSAGE[4] = 0
 
-        # if message == 1 and LAST_MESSAGE == False:
-        #     #ser.write("VIBRATION_ON\n".encode('utf-8'))
-            
-        #     ser.write(f"<v,1,100>\n".encode('utf-8'))
-        #     print("Vibration has been turned ON!")
-
-        #     LAST_MESSAGE = True
-        # elif message == 0 and LAST_MESSAGE == True:
-        #     #ser.write("VIBRATION_OFF\n".encode('utf-8'))
-            
-        #     ser.write(f"<v,1,0>\n".encode('utf-8'))
-        #     LAST_MESSAGE = False
             
     return LAST_MESSAGE
 
@@ -178,21 +166,20 @@ def OnlineOffline_management(is_online): # function to manage the online and off
     return cap, frame_counter
 
 def offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap): # TO DO: not working properly, video not stopping when it is over
+    frame_counter += 1  
+    print("frame number: ", frame_counter, " / ", int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
     if frame_counter == int(cap.get(cv2.CAP_PROP_FRAME_COUNT)):
             video_is_over = True
             print("Video is over")
     else:
         video_is_over = False
-    
-    frame_counter += 1  
-    print("frame number: ", frame_counter, " / ", int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
     return video_is_over, frame_counter
 
 def offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, csv_file): # function to compute the overall features of the video
     dataframe = pd.read_csv(csv_file)
     most_frequent_features = {}
     # compute the mean of the features
-    features_coloumns = ['crouch', 'hands_distance', 'hands_visibility'] # TO DO: add the other features, 'body_direction', 'head_direction'
+    features_coloumns = ['crouch', 'hands_distance', 'hands_visibility', 'body_direction', 'head_direction'] # TO DO: add the other features, 'body_direction', 'head_direction'
     print(" \n Final Outcomes:")
     for feature in features_coloumns:
         values_count = dataframe[feature].value_counts()
@@ -214,18 +201,7 @@ def normalize(value): # to adapt when we will have the real values from experime
     max_value = 1
     min_value = 0
     return (value - min_value) / (max_value - min_value)
-
-# def nose_test(client_socket, dataTable, LAST_MESSAGE): # function to test basic script's functionalities
-#     # test 
-#     nose_test = 1 - dataTable[f'{"NOSE"}_y'][-1]
-#     # send data to the server
-#     send_data_network(client_socket, str(
-#         nose_test) + "\n")
-#     if dataTable[f'{"NOSE"}_y'][-1] < 0.5:
-#         LAST_MESSAGE = serial_communication(1, LAST_MESSAGE)
-#     else:
-#         LAST_MESSAGE = serial_communication(0, LAST_MESSAGE) 
-    
+  
         
 
 def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable):
@@ -301,16 +277,15 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
             text = "Looking Up"
         else:
             text = "Looking Forward"
-        if body_y < -10:
+        if body_x < -10:
             body_text = "Body Right"
             LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
-        elif body_y > 10:
+        elif body_x > 10:
             body_text = "Body Left"
             LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
         else:
             body_text = "Body Forward"
             LAST_MESSAGE = serial_communication("GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
-        print(body_y)
 
         featuresTable[f'body_direction'].append(body_text)
         featuresTable[f'head_direction'].append(text)
@@ -614,13 +589,13 @@ def mediaPipe(client_socket, ssi_is_connected):
                                 writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
                                 writer.writerow(['class'] + [f'{name}_x' for name in landmarks_name] + [f'{name}_y' for name in landmarks_name] + [f'{name}_z' for name in landmarks_name] + [f'{name}_x_v' for name in landmarks_name] + [f'{name}_y_v' for name in landmarks_name] + [f'{name}_z_v' for name in landmarks_name] 
                                                 + [f'kinetic_Energy_{name}' for name in landmarks_name] + [f'{name}_acceleration' for name in landmarks_name] + [f'{name}_visibility' for name in landmarks_name] + ['crouch', 'hands_distance', 'hands_visibility'
-                                                                                                                                                                                                                     # , 'body_direction', 'head_direction' TO DO: NOT WORKING IN OFFLINE MODE
+                                                                                                                                                                                                                    , 'body_direction', 'head_direction' 
                                                                                                                                                                                                                       ] )
                         #print(featuresTable)
                         ai_data = list(np.array( [dataTable[f'{name}_x'][-1] for name in landmarks_name] + [dataTable[f'{name}_y'][-1] for name in landmarks_name] + [dataTable[f'{name}_z'][-1] for name in landmarks_name] + [dataTable[f'{name}_x_v'][-1] for name in landmarks_name] + [dataTable[f'{name}_y_v'][-1] for name in landmarks_name] 
                                                 + [dataTable[f'{name}_z_v'][-1] for name in landmarks_name] + [dataTable[f'kinetic_Energy_{name}'][-1] for name in landmarks_name] + [dataTable[f'{name}_acceleration'][-1] for name in landmarks_name] 
                                                 + [dataTable[f'{name}_visibility'][-1] for name in landmarks_name] + [featuresTable[f'crouch'][-1], featuresTable[f'hands_distance'][-1], featuresTable[f'hands_visibility'][-1]
-                                                # , featuresTable[f'body_direction'][-1], featuresTable[f'head_direction'][-1]  TO DO: NOT WORKING IN OFFLINE MODE                                                                 
+                                                , featuresTable[f'body_direction'][-1], featuresTable[f'head_direction'][-1]                                                                   
                                                                                                                       ] ))
                         ai_data.insert(0, "CLASSE") # to change with the class of the user !!!
                         with open('dataTable.csv', 'a') as f:
