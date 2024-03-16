@@ -1,3 +1,4 @@
+import json
 import mediapipe as mp
 import cv2
 import numpy as np
@@ -23,9 +24,9 @@ start_time = None
 elapsed_time = None
 user_body = {}
 arduino_is_connected = False
-ssi_is_connected = sys.argv[1] if len(sys.argv) > 1 else 0
-is_online = sys.argv[2] if len(sys.argv) > 2 else 1
-configuration_time = sys.argv[3] if len(sys.argv) > 3 else 5
+# ssi_is_connected = sys.argv[1] if len(sys.argv) > 1 else 0
+# is_online = sys.argv[2] if len(sys.argv) > 2 else 1
+# configuration_time = sys.argv[3] if len(sys.argv) > 3 else 5
 
 
 # try: # to check if the arduino is connected to the PC and manage errors related to the serial communication
@@ -73,16 +74,16 @@ def serial_communication(message, LAST_MESSAGE, value, arduino_is_connected = ar
     # COM4 is the port number of the Arduino
     # if arduino_is_connected:
     #     # print(LAST_MESSAGE, message)
-        
+
     #     if message == "HANDS_NOT_VISIBILITY" and LAST_MESSAGE[0] == 0:
-    #         ser.write(f"<v,4,1,10,40,10>\n".encode('utf-8')) # sinusoide
+    #         ser.write(f"<v,4,1,30,60,10>\n".encode('utf-8')) # sinusoide
     #         print("Message sent to the arduino, hands not visible")
     #         LAST_MESSAGE[0] = 1
     #     if message == "HANDS_VISIBILITY" and LAST_MESSAGE[0] == 1:
     #         ser.write(f"<v,4,1,0,0,0>\n".encode('utf-8'))
     #         print("Message sent to the arduino, hands visible")
     #         LAST_MESSAGE[0] = 0
-            
+
     #     if message == "HANDS_TOUCHING" and LAST_MESSAGE[1] == 0:
     #         ser.write(f"<v,4,0,40,40,0>\n".encode('utf-8'))
     #         print("Message sent to the arduino, hands touching")
@@ -91,29 +92,29 @@ def serial_communication(message, LAST_MESSAGE, value, arduino_is_connected = ar
     #         ser.write(f"<v,4,0,0,0,0>\n".encode('utf-8'))
     #         print("Message sent to the arduino, hands not touching")
     #         LAST_MESSAGE[1] = 0
-            
+
     #     if message == "BAD_BODY_DIRECTION" and LAST_MESSAGE[2] == 0:
     #         if value == "Body Right":
-    #             ser.write(f"<v,3,0,40,40,0>\n".encode('utf-8'))
+    #             ser.write(f"<v,3,0,30,30,0>\n".encode('utf-8'))
     #             print("Message sent to the arduino, body right")
     #         elif value == "Body Left":
-    #             ser.write(f"<v,2,0,40,40,0>\n".encode('utf-8'))
+    #             ser.write(f"<v,2,0,30,30,0>\n".encode('utf-8'))
     #             print("Message sent to the arduino, body left")
     #         LAST_MESSAGE[2] = 1
     #     if message == "GOOD_BODY_DIRECTION" and LAST_MESSAGE[2] == 1:
     #         ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
     #         print("Message sent to the arduino, body forward")
     #         LAST_MESSAGE[2] = 0
-        
+
     #     if message == "CROUCH" and LAST_MESSAGE[3] == 0:
-    #         ser.write(f"<v,5,1,40,40,2>\n".encode('utf-8'))
+    #         ser.write(f"<v,5,1,20,40,0>\n".encode('utf-8'))
     #         print("Message sent to the arduino, crouch")
     #         LAST_MESSAGE[3] = 1
     #     if message == "NOT_CROUCH" and LAST_MESSAGE[3] == 1:
     #         ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
     #         print("Message sent to the arduino, not crouch")
     #         LAST_MESSAGE[3] = 0
-            
+
     #     if message == "BAD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 0:
     #         ser.write(f"<h,0,0,40,40,5>\n".encode('utf-8'))
     #         print("Message sent to the arduino, head not forward")
@@ -122,32 +123,12 @@ def serial_communication(message, LAST_MESSAGE, value, arduino_is_connected = ar
     #         ser.write(f"<h,0,0,0,0,5>\n".encode('utf-8'))
     #         print("Message sent to the arduino, head forward")
     #         LAST_MESSAGE[4] = 0
-
             
     return LAST_MESSAGE
 
 def settings(start_time):
-    # ask the user if he wants to use a video or the webcam
     time.sleep(0.5)
-    # is_online = input("Do you want to compute the data from a video or from the webcam? Press 0 to use a video, 1 to use the webcam \n")
-    # if is_online == "1":
-    #     is_online = True
-    # elif is_online == "0":
-    #     is_online = False
-    # else:
-    #     print("Wrong input, please try again, online?")
-    #     settings(start_time)
     video_is_over = False
-    
-    # ask the user how many seconds he wants to wait before starting the configuration
-    # configuration_time = float(input("How many seconds do you want to wait before starting the configuration? "))
-    # check if the configuration time is a number
-    # try:
-    #     configuration_time = float(configuration_time)
-    # except:
-    #     print("Wrong input, please try again, configuration time")
-    #     settings(start_time)
-    # configuration of the body of the user
     if start_time == None:
         start_time = time.time()
     
@@ -204,7 +185,7 @@ def normalize(value): # to adapt when we will have the real values from experime
   
         
 
-def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable):
+def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable, calibrationData):
     body_2d = []
     body_3d = []
     text = ""
@@ -277,15 +258,16 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
             text = "Looking Up"
         else:
             text = "Looking Forward"
-        if body_x < -10:
+        if body_y < - calibrationData["body_y"]:
             body_text = "Body Right"
             LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
-        elif body_x > 10:
+        elif body_y > calibrationData["body_y"]:
             body_text = "Body Left"
             LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
         else:
             body_text = "Body Forward"
             LAST_MESSAGE = serial_communication("GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
+        # print("Body direction: ", body_text)
 
         featuresTable[f'body_direction'].append(body_text)
         featuresTable[f'head_direction'].append(text)
@@ -350,42 +332,45 @@ def bounding_triangle(client_socket, dataTable, LAST_MESSAGE):
     y_torso = torso_points[0][1] - torso_points[3][1]
     return triangle_area, y_torso
 
-def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso , yTorso, featuresTable):
-    bounding_area_proportion = 0.98 
-    yTorso_proportion = 0.99
+def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso , yTorso, featuresTable, calibrationData):
+    bounding_area_proportion = calibrationData["bounding_area_proportion"]
+    yTorso_proportion = calibrationData["yTorso_proportion"]
     #print("Bounding", standard_bounding_triangle, triangle_area)
     #print("torso", standart_yTorso, yTorso)
     if abs(yTorso) < abs(standart_yTorso * yTorso_proportion):
         crouch_is_good = False
-        #print("Crouch detected, yTorso is too small")
+        featuresTable[f'crouch'].append("Crouched") 
+        print("Crouch detected, yTorso is too small")
     elif abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
         crouch_is_good = False
         featuresTable[f'crouch'].append("Crouched") 
-        #print("Crouch detected, triangle area is too small")
+        print("Crouch detected, triangle area is too small")
     else:
         crouch_is_good = True
         featuresTable[f'crouch'].append("Not crouched")
     # if the user is crouching, send a message to the arduino to turn on the vibration
-    if abs(yTorso) < abs(standart_yTorso * yTorso_proportion) and abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
+    if abs(yTorso) < abs(standart_yTorso * yTorso_proportion) or abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
         LAST_MESSAGE = serial_communication("CROUCH", LAST_MESSAGE, 0)
     else:
         LAST_MESSAGE = serial_communication("NOT_CROUCH", LAST_MESSAGE, 0)
 
-def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable):
+def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, calibrationData):
     # calculate the distance between the hands
     hands_distance = abs(dataTable[f'LEFT_WRIST_x'][-1] - dataTable[f'RIGHT_WRIST_x'][-1]) + abs(dataTable[f'LEFT_WRIST_y'][-1] - dataTable[f'RIGHT_WRIST_y'][-1]) + abs(dataTable[f'LEFT_WRIST_z'][-1] - dataTable[f'RIGHT_WRIST_z'][-1])
     # print("hands_distance: ", hands_distance)
-    if hands_distance < 0.5:
+    if hands_distance < [calibrationData["hands_distance"]+0.1]:
         LAST_MESSAGE = serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands touching")
+        # print("Hands touching")
         # serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
     else:
         LAST_MESSAGE = serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands not touching")
+        # print("Hands not touching")
         # serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
     return hands_distance
 
-def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable):
+def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable, calibrationData):
     # understand if the hands are visible or not
     # print("LEFT_WRIST_visibility: ", dataTable[f'LEFT_WRIST_visibility'][-1])
     # print("RIGHT_WRIST_visibility: ", dataTable[f'RIGHT_WRIST_visibility'][-1])
@@ -426,7 +411,7 @@ def compute_main_features(dataTable, name, COORDINATES, window_length, polyorder
 
     
  
-def mediaPipe(client_socket, ssi_is_connected):
+def mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, configuration_time):
     # Setup MediaPipe Holistic instance
     mp_holistic = mp.solutions.holistic
     holistic = mp_holistic.Holistic(
@@ -548,7 +533,7 @@ def mediaPipe(client_socket, ssi_is_connected):
                         dataTable[f'{name}_visibility'].pop(0)
                         dataTable[f'kinetic_Energy_{name}'].pop(0)
                         dataTable[f'{name}_acceleration'].pop(0)
-                    # TO DO: the same for the features table, at the moment there is the problem with the OFFLINE MODE
+                    
                     
                 if len(dataTable[f'NOSE_x']) == 1:
                     # cancello il file csv se esiste
@@ -574,11 +559,11 @@ def mediaPipe(client_socket, ssi_is_connected):
                     #print(dataTable[f'NOSE_acceleration'][-1])
                     triangle_area, yTorso = bounding_triangle(client_socket, dataTable, LAST_MESSAGE)
                     #print(dataTable[f'NOSE_x'][-1], dataTable[f'NOSE_y'][-1], dataTable[f'NOSE_z'][-1])
-                    crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso, yTorso,featuresTable)
-                    touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable)
-                    hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable)
+                    crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso, yTorso,featuresTable, calibrationData)
+                    touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, calibrationData)
+                    hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable, calibrationData)
                     # call a function that do the head inclination detection
-                    headAlert = bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable)
+                    headAlert = bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable, calibrationData)
                     # create and update the csv file with the data
                     
                 ##################################################################################
@@ -597,7 +582,7 @@ def mediaPipe(client_socket, ssi_is_connected):
                                                 + [dataTable[f'{name}_visibility'][-1] for name in landmarks_name] + [featuresTable[f'crouch'][-1], featuresTable[f'hands_distance'][-1], featuresTable[f'hands_visibility'][-1]
                                                 , featuresTable[f'body_direction'][-1], featuresTable[f'head_direction'][-1]                                                                   
                                                                                                                       ] ))
-                        ai_data.insert(0, "CLASSE") # to change with the class of the user !!!
+                        ai_data.insert(0, "CLASS") # to change with the class of the user !!!
                         with open('dataTable.csv', 'a') as f:
                             writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
                             writer.writerow(ai_data)
@@ -656,13 +641,16 @@ if __name__ == "__main__":
     # Define the host and the port of the server
     host = "localhost"
     port = 9000
+    
+    with open('scripts/bodyCalibrations.json') as f:
+        calibrationData = json.load(f)
 
-    ssi_is_connected = sys.argv[1] if len(sys.argv) > 1 else False
-    is_online = sys.argv[2] if len(sys.argv) > 2 else True
-    configuration_time = sys.argv[3] if len(sys.argv) > 3 else float(5)
+    ssi_is_connected = sys.argv[1].lower() == 'false' 
+    is_online = sys.argv[2].lower() == 'true'
+    configuration_time = float(sys.argv[3]) if len(sys.argv) > 3 else 5.0
     # create a socket
     client_socket, ssi_is_connected = manage_socket(host, port, ssi_is_connected, state="start")
     #client_socket = 1
     # start mediapipe
-    mediaPipe(client_socket, ssi_is_connected)
+    mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, configuration_time)
   
