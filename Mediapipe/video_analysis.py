@@ -14,6 +14,7 @@ import sys
 import csv
 import serial
 import pandas as pd
+import keyboard
 
 COORDINATES = ['x', 'y', 'z']
 HOST = '127.0.0.1'  # The server's hostname or IP address
@@ -135,9 +136,9 @@ def settings(start_time):
     return start_time, configuration_time, is_online, video_is_over
     
 
-def OnlineOffline_management(is_online): # function to manage the online and offline mode
+def OnlineOffline_management(is_online, configData): # function to manage the online and offline mode
     if not is_online:
-        video_path = "C:/Users/Alessandro/Desktop/Research Project/RT_HAI/Videos/VideoProva_short.mp4" # to change with the path of the video you want to use
+        video_path =  configData["video_path"]
         cap = cv2.VideoCapture(video_path)
         print("Offline mode - total number of frames: ", cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
@@ -146,7 +147,7 @@ def OnlineOffline_management(is_online): # function to manage the online and off
     frame_counter = 0
     return cap, frame_counter
 
-def offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap): # TO DO: not working properly, video not stopping when it is over
+def offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap, configData): # TO DO: not working properly, video not stopping when it is over
     frame_counter += 1  
     print("frame number: ", frame_counter, " / ", int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
     if frame_counter == int(cap.get(cv2.CAP_PROP_FRAME_COUNT)):
@@ -185,7 +186,7 @@ def normalize(value): # to adapt when we will have the real values from experime
   
         
 
-def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable, calibrationData):
+def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable, configData):
     body_2d = []
     body_3d = []
     text = ""
@@ -258,10 +259,10 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
             text = "Looking Up"
         else:
             text = "Looking Forward"
-        if body_y < - calibrationData["body_y"]:
+        if body_y < - configData["body_y"]:
             body_text = "Body Right"
             LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
-        elif body_y > calibrationData["body_y"]:
+        elif body_y > configData["body_y"]:
             body_text = "Body Left"
             LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
         else:
@@ -332,19 +333,19 @@ def bounding_triangle(client_socket, dataTable, LAST_MESSAGE):
     y_torso = torso_points[0][1] - torso_points[3][1]
     return triangle_area, y_torso
 
-def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso , yTorso, featuresTable, calibrationData):
-    bounding_area_proportion = calibrationData["bounding_area_proportion"]
-    yTorso_proportion = calibrationData["yTorso_proportion"]
+def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso , yTorso, featuresTable, configData):
+    bounding_area_proportion = configData["bounding_area_proportion"]
+    yTorso_proportion = configData["yTorso_proportion"]
     #print("Bounding", standard_bounding_triangle, triangle_area)
     #print("torso", standart_yTorso, yTorso)
     if abs(yTorso) < abs(standart_yTorso * yTorso_proportion):
         crouch_is_good = False
         featuresTable[f'crouch'].append("Crouched") 
-        print("Crouch detected, yTorso is too small")
+        # print("Crouch detected, yTorso is too small")
     elif abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
         crouch_is_good = False
         featuresTable[f'crouch'].append("Crouched") 
-        print("Crouch detected, triangle area is too small")
+        # print("Crouch detected, triangle area is too small")
     else:
         crouch_is_good = True
         featuresTable[f'crouch'].append("Not crouched")
@@ -354,11 +355,12 @@ def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle
     else:
         LAST_MESSAGE = serial_communication("NOT_CROUCH", LAST_MESSAGE, 0)
 
-def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, calibrationData):
+def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, configData):
     # calculate the distance between the hands
     hands_distance = abs(dataTable[f'LEFT_WRIST_x'][-1] - dataTable[f'RIGHT_WRIST_x'][-1]) + abs(dataTable[f'LEFT_WRIST_y'][-1] - dataTable[f'RIGHT_WRIST_y'][-1]) + abs(dataTable[f'LEFT_WRIST_z'][-1] - dataTable[f'RIGHT_WRIST_z'][-1])
     # print("hands_distance: ", hands_distance)
-    if hands_distance < [calibrationData["hands_distance"]+0.1]:
+    hands_threshold = configData["hands_distance"] + 0.1
+    if hands_distance < hands_threshold:
         LAST_MESSAGE = serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands touching")
         # print("Hands touching")
@@ -370,7 +372,7 @@ def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, calibr
         # serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
     return hands_distance
 
-def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable, calibrationData):
+def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable, configData):
     # understand if the hands are visible or not
     # print("LEFT_WRIST_visibility: ", dataTable[f'LEFT_WRIST_visibility'][-1])
     # print("RIGHT_WRIST_visibility: ", dataTable[f'RIGHT_WRIST_visibility'][-1])
@@ -411,7 +413,7 @@ def compute_main_features(dataTable, name, COORDINATES, window_length, polyorder
 
     
  
-def mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, configuration_time):
+def mediaPipe(client_socket, ssi_is_connected, configData, is_online, configuration_time):
     # Setup MediaPipe Holistic instance
     mp_holistic = mp.solutions.holistic
     holistic = mp_holistic.Holistic(
@@ -429,7 +431,7 @@ def mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, confi
     start_time = None
     configuration_isdone = False
     start_time, configuration_time, is_online, video_is_over = settings(start_time)
-    cap, frame_counter = OnlineOffline_management(is_online)
+    cap, frame_counter = OnlineOffline_management(is_online, configData)
     
     # Savgol filter parameters
     window_length = 17
@@ -496,7 +498,7 @@ def mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, confi
                 # Faceresults = results.face_landmarks
                 
                 if not is_online:
-                    video_is_over, frame_counter = offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap)
+                    video_is_over, frame_counter = offline_functions(client_socket, dataTable, LAST_MESSAGE, frame_counter, cap, configData)
 
                 for name in landmarks_name:
                     # append the coordinates of the landmark to the list
@@ -537,8 +539,8 @@ def mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, confi
                     
                 if len(dataTable[f'NOSE_x']) == 1:
                     # cancello il file csv se esiste
-                    if os.path.exists('dataTable.csv'):
-                        os.remove('dataTable.csv')
+                    if os.path.exists('../Mediapipe/dataTable.csv'):
+                        os.remove('../Mediapipe/dataTable.csv')
                 
                 
                     
@@ -559,18 +561,18 @@ def mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, confi
                     #print(dataTable[f'NOSE_acceleration'][-1])
                     triangle_area, yTorso = bounding_triangle(client_socket, dataTable, LAST_MESSAGE)
                     #print(dataTable[f'NOSE_x'][-1], dataTable[f'NOSE_y'][-1], dataTable[f'NOSE_z'][-1])
-                    crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso, yTorso,featuresTable, calibrationData)
-                    touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, calibrationData)
-                    hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable, calibrationData)
+                    crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle_area, standard_bounding_triangle, standart_yTorso, yTorso,featuresTable, configData)
+                    touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, configData)
+                    hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable, configData)
                     # call a function that do the head inclination detection
-                    headAlert = bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable, calibrationData)
+                    headAlert = bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSAGE, image, img_h, img_w, img_c, dataTable, featuresTable, configData)
                     # create and update the csv file with the data
                     
                 ##################################################################################
                 if len(featuresTable[f'crouch']) > 1:
                         # se non esiste creo un file csv con i nomi delle colonne
-                        if not os.path.exists('dataTable.csv'):
-                            with open('dataTable.csv', 'a+') as f:
+                        if not os.path.exists('../Mediapipe/dataTable.csv'):
+                            with open('../Mediapipe/dataTable.csv', 'a+') as f:
                                 writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
                                 writer.writerow(['class'] + [f'{name}_x' for name in landmarks_name] + [f'{name}_y' for name in landmarks_name] + [f'{name}_z' for name in landmarks_name] + [f'{name}_x_v' for name in landmarks_name] + [f'{name}_y_v' for name in landmarks_name] + [f'{name}_z_v' for name in landmarks_name] 
                                                 + [f'kinetic_Energy_{name}' for name in landmarks_name] + [f'{name}_acceleration' for name in landmarks_name] + [f'{name}_visibility' for name in landmarks_name] + ['crouch', 'hands_distance', 'hands_visibility'
@@ -583,7 +585,7 @@ def mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, confi
                                                 , featuresTable[f'body_direction'][-1], featuresTable[f'head_direction'][-1]                                                                   
                                                                                                                       ] ))
                         ai_data.insert(0, "CLASS") # to change with the class of the user !!!
-                        with open('dataTable.csv', 'a') as f:
+                        with open('../Mediapipe/dataTable.csv', 'a') as f:
                             writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
                             writer.writerow(ai_data)
                
@@ -623,12 +625,13 @@ def mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, confi
 
                     cv2.imshow('MediaPipe Feed', image)
 
-                if cv2.waitKey(10) & 0xFF == ord('q') or video_is_over:
+                if cv2.waitKey(10) & 0xFF == ord('q') or video_is_over or keyboard.is_pressed('enter'):
                     try:
-                        offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
+                        offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "../Mediapipe/dataTable.csv")
                     except:
                         print("ERROR: dataTable.csv not found")
                     break
+                
 
     cap.release()
     cv2.destroyAllWindows()
@@ -642,15 +645,24 @@ if __name__ == "__main__":
     host = "localhost"
     port = 9000
     
-    with open('scripts/bodyCalibrations.json') as f:
-        calibrationData = json.load(f)
+    if os.path.exists('scripts/body_config.json'):
+        with open('scripts/body_config.json') as f:
+            configData = json.load(f)
+    elif os.path.exists('../Mediapipe/scripts/body_config.json'):
+        with open('../Mediapipe/scripts/body_config.json') as f:
+            configData = json.load(f)
+        
+    # check if the input parameters are correct
+    if len(sys.argv) < 3:
+        print("Usage: python video_analysis.py <ssi_is_connected> <is_online>")
+        sys.exit(1)
 
     ssi_is_connected = sys.argv[1].lower() == 'false' 
     is_online = sys.argv[2].lower() == 'true'
-    configuration_time = float(sys.argv[3]) if len(sys.argv) > 3 else 5.0
+    configuration_time = configData["configuration_time"] 
     # create a socket
     client_socket, ssi_is_connected = manage_socket(host, port, ssi_is_connected, state="start")
     #client_socket = 1
     # start mediapipe
-    mediaPipe(client_socket, ssi_is_connected, calibrationData, is_online, configuration_time)
+    mediaPipe(client_socket, ssi_is_connected, configData, is_online, configuration_time)
   

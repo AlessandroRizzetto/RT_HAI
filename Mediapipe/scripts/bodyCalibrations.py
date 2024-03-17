@@ -62,8 +62,12 @@ def saveCalibrationData(dataTable, featuresTable, csv_file, calibrationData, han
         calibrationData["body_y"] = body_y_mean
         print("body_y_mean: ", body_y_mean)
     
-    with open('bodyCalibrations.json', 'w') as f:
-            json.dump(calibrationData, f, indent=4)
+    if os.path.exists('body_config.json'):
+        with open('body_config.json', 'w') as f:
+            json.dump(calibrationData, f)
+    elif os.path.exists('../Mediapipe/scripts/body_config.json'):
+        with open('../Mediapipe/scripts/body_config.json', 'w') as f:
+            json.dump(calibrationData, f)
         
 
         
@@ -335,6 +339,8 @@ def mediaPipe(crouch_calibration, hands_calibration, body_direction_calibration,
                     # cancello il file csv se esiste
                     if os.path.exists('configurationTable.csv'):
                         os.remove('configurationTable.csv')
+                    elif os.path.exists('../Mediapipe/scripts/configurationTable.csv'):
+                        os.remove('../Mediapipe/scripts/configurationTable.csv')
                 
             
             elapsed_time = time.time() - start_time
@@ -354,8 +360,8 @@ def mediaPipe(crouch_calibration, hands_calibration, body_direction_calibration,
                 
             if len(featuresTable[f'crouch']) > 1:
                     # se non esiste creo un file csv con i nomi delle colonne
-                    if not os.path.exists('configurationTable.csv'):
-                        with open('configurationTable.csv', 'a+') as f:
+                    if not os.path.exists('../Mediapipe/scripts/configurationTable.csv'):
+                        with open('../Mediapipe/scripts/configurationTable.csv', 'a+') as f:
                             writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
                             writer.writerow(['class'] + [f'{name}_x' for name in landmarks_name] + [f'{name}_y' for name in landmarks_name] + [f'{name}_z' for name in landmarks_name] + [f'{name}_visibility' for name in landmarks_name] + ['crouch', 'hands_distance', 'hands_visibility'
                                                                                                                                                                                                                 , 'body_direction', 'head_direction' , 'hands_physical_distance', 'body_y', 'crouched_bound_triangle_custom_proportion', 'crouched_yTorso_custom_proportion'
@@ -365,7 +371,7 @@ def mediaPipe(crouch_calibration, hands_calibration, body_direction_calibration,
                                             , featuresTable[f'head_direction'][-1] , featuresTable[f'body_direction'][-1], featuresTable[f'hands_physical_distance'][-1], featuresTable[f'body_y'][-1], featuresTable[f'crouched_bound_triangle_custom_proportion'][-1], featuresTable[f'crouched_yTorso_custom_proportion'][-1]                                                                  
                                                                                                                     ] ))
                     ai_data.insert(0, "CLASS") # to change with the class of the user !!!
-                    with open('configurationTable.csv', 'a') as f:
+                    with open('../Mediapipe/scripts/configurationTable.csv', 'a') as f:
                         writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
                         writer.writerow(ai_data)
             
@@ -411,24 +417,28 @@ def mediaPipe(crouch_calibration, hands_calibration, body_direction_calibration,
     cap.release()
     cv2.destroyAllWindows()
     
-    saveCalibrationData(dataTable, featuresTable, 'configurationTable.csv', calibrationData, hands_calibration, crouch_calibration, body_direction_calibration, crouched_yTorso_custom_proportion, crouched_bound_triangle_custom_proportion)
+    saveCalibrationData(dataTable, featuresTable, '../Mediapipe/scripts/configurationTable.csv', calibrationData, hands_calibration, crouch_calibration, body_direction_calibration, crouched_yTorso_custom_proportion, crouched_bound_triangle_custom_proportion)
 
 
 if __name__ == "__main__":
     
-    with open('bodyCalibrations.json') as f:
-        calibrationData = json.load(f)
+    if os.path.exists('body_config.json'):
+        with open('body_config.json') as f:
+            calibrationData = json.load(f)
+    elif os.path.exists('../Mediapipe/scripts/body_config.json'):
+        with open('../Mediapipe/scripts/body_config.json') as f:
+            calibrationData = json.load(f)
 
     # check if the input parameters are correct
-    if len(sys.argv) < 5:
-        print("Usage: python script.py crouch_calibration hands_calibration body_direction_calibration configuration_time")
+    if len(sys.argv) < 4:
+        print("Usage: python script.py crouch_calibration hands_calibration body_direction_calibration")
         sys.exit(1)
     
     # Define the input parameters
     crouch_calibration = sys.argv[1].lower() == 'true'
     hands_calibration = sys.argv[2].lower() == 'true'
     body_direction_calibration = sys.argv[3].lower() == 'true'
-    configuration_time = float(sys.argv[4]) if len(sys.argv) > 4 else 5.0
+    configuration_time = calibrationData["configuration_time"]
     print("Input settings: \n", 
             "crouch_calibration: ", crouch_calibration, 
             "hands_calibration: ", hands_calibration, 
