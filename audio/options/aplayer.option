@@ -3,6 +3,6 @@
     <item name="device" type="INT" num="1" value="0" lock="true" help="audio device id" />
     <item name="remember" type="BOOL" num="1" value="true" lock="true" help="remember selected audio device" />
     <item name="numBuffers" type="UINT" num="1" value="8" lock="true" help="the number of audio buffers (blocks) to be used in parallel for audio playback" />
-    <item name="bufferSize" type="DOUBLE" num="1" value="1.000000e-01" lock="true" help="the size of the audio buffers (blocks) in seconds. Must be >= audio block input" />
+    <item name="bufferSize" type="DOUBLE" num="1" value="1.088435e-01" lock="true" help="the size of the audio buffers (blocks) in seconds. Must be >= audio block input" />
     <item name="bufferSizeSamples" type="UINT" num="1" value="4800" lock="true" help="the size of the audio buffers (blocks) in samples (overwrites size if > 0)" />
 </options>
