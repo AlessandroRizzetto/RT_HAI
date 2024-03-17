@@ -24,7 +24,7 @@
 	Make sure to adjust the options to fit the incoming signal.
 	
 	-->
-	<object create="SocketEventReader" port="3333" address="calibration@vad" />
+	<object create="SocketEventReader" url="udp://localhost:3333" address="calibration@vad" />
 	<!---->
 
 	<include path=".\vad_filter.pipeline"/>
