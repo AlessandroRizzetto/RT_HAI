@@ -1,6 +1,7 @@
 import socket
 
 HANDSHAKE_MESSAGE = 'SSI:STRT:RUN1\0'
+CLOSING_MESSAGE = 'SSI:STOP:RUN1\0'
 
 def create_socket(host, port, task="send"):
     if task == "send":
@@ -16,5 +17,14 @@ def create_socket(host, port, task="send"):
         print("Socket connected")
         return client_socket
 
-def send_data_network(client_socket: socket, host, sender, data):
+def close_socket(client_socket: socket, host, port):
+    client_socket.sendto(bytes(CLOSING_MESSAGE, "utf-8"), (host, port))
+    client_socket.close()
+    print("Socket closed")
+
+def send_data(client_socket: socket, host, sender, data):
     client_socket.sendto(bytes(data + "\0", "utf-8"), (host, sender))
+
+def receive_data(client_socket: socket):
+    data, addr = client_socket.recvfrom(1024)
+    return data.decode("utf-8")

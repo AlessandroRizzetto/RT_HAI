@@ -22,5 +22,8 @@ output:file:path = ..\data\dataTable.csv
 # $(boolean) if features storage is selected and there exists another file in the same path, overwrites it
 output:file:new = true
 
-# $(boolean) show all output features if true
+# $(boolean) if true send data to python, which will handle the visualization
+output:visualization:python = true
+
+# $(boolean) if the visualization is not demanded to python, show all output features if true
 output:visualization:debug = false

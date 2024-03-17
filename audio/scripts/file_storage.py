@@ -6,7 +6,7 @@ from scipy.signal import savgol_filter
 def getOptions(opts,vars):
     opts['new_file'] = 'false'
     opts['file_path'] = '../data/dataTable.csv'
-    opts['features'] = ['loudness', 'pitch', 'energy', 'jitter', 'shimmer', 'alpha-ratio', 'hammarberg-index', 'spectral-flux', 'spectral-slope']
+    opts['features'] = ['loudness', 'loudness-d', 'pitch', 'pitch-d', 'energy', 'jitter', 'shimmer', 'alpha-ratio', 'hammarberg-index', 'spectral-flux', 'spectral-slope']
     opts['user_class'] = 'CLASSE'
     opts['mean'] = 'false'
     opts['polyorder'] = 2
@@ -100,4 +100,5 @@ def consume_flush(sins, board, opts, vars):
         for i, x in enumerate(vars['data']):
             print(x, to_write[i+1])
     
-    vars['f'].close()
+    if vars['f'] is not None:
+        vars['f'].close()

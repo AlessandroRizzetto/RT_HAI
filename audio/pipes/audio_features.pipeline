@@ -4,6 +4,7 @@
 
 	<register>
 		<load name="graphic" />
+		<load name="ioput" />
 		<load name="signal" />
 		<load name="python310" />
 		<load name="opensmile" />
@@ -76,6 +77,15 @@
 	</gate>
 	<!---->
 
+	<transformer create="PythonFeature:loudness-d" script="first_derivative" syspath="..\scripts">
+		<input pin="loudness" frame="1s" delta="0.5s"/>
+		<output channel="loudness-d" pin="loudness-d"/>
+	</transformer>
+	<transformer create="PythonFeature:pitch-d" script="first_derivative" syspath="..\scripts">
+		<input pin="pitch" frame="1s" delta="0.5s"/>
+		<output channel="pitch-d" pin="pitch-d"/>
+	</transformer>
+
 	<!-- # Playback and Visualization
 	
 	Then we play back the audio signal and visualize its informations.
@@ -86,72 +96,105 @@
 			<input pin="audio" frame="0.1s" />
 		</consumer>
 	</gate>
-	<consumer create="SignalPainter:plot-audio" title="AUDIO" size="10" type="2">
-		<input pin="audio" frame="0.3s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-f-loudness" title="LOUDNESS" size="10.0" type="5" colormap="3">
-		<input pin="loudness" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-f-pitch" title="PITCH" type="5">
-		<input pin="pitch" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-f-h-energy" size="10" title="ENERGY" type="5">
-		<input pin="energy" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-f-h-jitter" title="JITTER" type="5">
-		<input pin="jitter" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-f-h-shimmer" title="SHIMMER" type="5">
-		<input pin="shimmer" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-f-h-alpha-ratio" size="10" title="ALPHA RATIO" type="4">
-		<input pin="alpha-ratio" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-f-h-hammarberg-index" size="10" title="HAMMARBERG INDEX" type="4">
-		<input pin="hammarberg-index" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-f-h-spectral-slope" size="10" title="SPECTRAL SLOPE" type="4">
-		<input pin="spectral-slope" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-f-h-spectral-flux" size="10" title="SPECTRAL FLUX" type="5">
-		<input pin="spectral-flux" frame="1s" delta="0.5s" />
-	</consumer>
-	<consumer create="SignalPainter:plot-vad" title="VAD" size="10" type="2">
-		<input pin="vad-audio" frame="0.1s" />
-	</consumer>
-	<gate open="$(features:mffc)">
-		<consumer create="SignalPainter:plot-mffc" size="10" title="MFCC" type="1">
-			<input pin="mfcc" frame="0.03s" />
+	<gate close="$(output:visualization:python)">
+		<consumer create="SignalPainter:plot-audio" title="AUDIO" size="10" type="2">
+			<input pin="audio" frame="0.3s" />
 		</consumer>
-	</gate>
-
-	<gate open="$(output:visualization:debug)">
-		<gate close="$(features:mffc)">
-			<object create="Decorator" icon="true" title="Pipeline">
-				<area pos="0,0,400,300">plot-audio</area>
-				<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
-				<area pos="400,0,400,300">plot-vad</area>
-				<area pos="900,0,600,800">monitor</area>
-			</object>
-		</gate>
+		<consumer create="SignalPainter:plot-f-h-loudness" title="LOUDNESS" type="5">
+			<input pin="loudness" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-loudness-d" title="LOUDNESS DERIVATIVE" type="4">
+			<input pin="loudness-d" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-loudness-dh" title="LOUDNESS DERIVATIVE HISTORY" size="30.0">
+			<input pin="loudness-d" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-h-pitch" title="PITCH" type="5">
+			<input pin="pitch" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-pitch-d" title="PITCH DERIVATIVE" type="4">
+			<input pin="pitch-d" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-pitch-dh" title="PITCH DERIVATIVE HISTORY" size="30.0">
+			<input pin="pitch-d" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-h-energy" size="10" title="ENERGY" type="5">
+			<input pin="energy" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-h-jitter" title="JITTER" type="5">
+			<input pin="jitter" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-h-shimmer" title="SHIMMER" type="5">
+			<input pin="shimmer" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-h-alpha-ratio" size="10" title="ALPHA RATIO" type="4">
+			<input pin="alpha-ratio" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-h-hammarberg-index" size="10" title="HAMMARBERG INDEX" type="4">
+			<input pin="hammarberg-index" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-h-spectral-slope" size="10" title="SPECTRAL SLOPE" type="4">
+			<input pin="spectral-slope" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-f-h-spectral-flux" size="10" title="SPECTRAL FLUX" type="5">
+			<input pin="spectral-flux" frame="1s" delta="0.5s" />
+		</consumer>
+		<consumer create="SignalPainter:plot-vad" title="VAD" size="10" type="2">
+			<input pin="vad-audio" frame="0.1s" />
+		</consumer>
 		<gate open="$(features:mffc)">
+			<consumer create="SignalPainter:plot-mffc" size="10" title="MFCC" type="1">
+				<input pin="mfcc" frame="0.03s" />
+			</consumer>
+		</gate>
+
+		<gate open="$(output:visualization:debug)">
+			<gate close="$(features:mffc)">
+				<object create="Decorator" icon="true" title="Pipeline">
+					<area pos="0,0,400,300">plot-audio</area>
+					<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
+					<area pos="400,0,400,300">plot-vad</area>
+					<area pos="900,0,600,800">monitor</area>
+				</object>
+			</gate>
+			<gate open="$(features:mffc)">
+				<object create="Decorator" icon="true" title="Pipeline">
+					<area pos="0,0,400,300">plot-audio</area>
+					<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
+					<area pos="400,0,400,300">plot-vad</area>
+					<area pos="600,300,400,300">plot-mffc</area>
+					<area pos="1100,0,400,800">monitor</area>
+				</object>
+			</gate>
+		</gate>
+		<gate close="$(output:visualization:debug)">
 			<object create="Decorator" icon="true" title="Pipeline">
-				<area pos="0,0,400,300">plot-audio</area>
-				<area pos="0,300,600,600" nv="2" nh="5">plot-f-*</area>
-				<area pos="400,0,400,300">plot-vad</area>
-				<area pos="600,300,400,300">plot-mffc</area>
-				<area pos="1100,0,400,800">monitor</area>
+				<area pos="50,50,150,350">plot-f-loudness-d</area>
+				<area pos="250,50,600,350">plot-f-loudness-dh</area>
+				<area pos="50,450,150,350">plot-f-pitch-d</area>
+				<area pos="250,450,600,350">plot-f-pitch-dh</area>
+				<area pos="1000,0,400,150">plot-audio</area>
+				<area pos="1000,150,400,150">plot-vad</area>
+				<area pos="900,300,600,600" nv="2" nh="5">plot-f-h-*</area>
 			</object>
 		</gate>
 	</gate>
-	<gate close="$(output:visualization:debug)">
-		<object create="Decorator" icon="true" title="Pipeline">
-			<area pos="100,100,250,650">plot-f-loudness</area>
-			<area pos="450,100,250,650">plot-f-pitch</area>
-			<area pos="1000,0,400,150">plot-audio</area>
-			<area pos="1000,150,400,150">plot-vad</area>
-			<area pos="900,300,600,600" nv="2" nh="4">plot-f-h-*</area>
-		</object>
+	<gate open="$(output:visualization:python)">
+		<consumer create="PythonConsumer:features_sender" script="features_sender" syspath="..\scripts">
+			<input pin="loudness" frame="1s" delta="0.5s" />
+			<xinput size="9">
+				<input pin="loudness-d" />
+				<input pin="pitch" />
+				<input pin="pitch-d" />
+				<input pin="energy" />
+				<input pin="jitter" />
+				<input pin="shimmer" />
+				<input pin="alpha-ratio" />
+				<input pin="hammarberg-index" />
+				<input pin="spectral-flux" />
+				<input pin="spectral-slope" />
+			</xinput>
+		</consumer>
 	</gate>
 	<!---->
 
@@ -164,10 +207,12 @@
 	-->
 	<gate close="$(calibration:user)">
 		<gate open="$(output:file:save)">
-			<consumer create="PythonConsumer" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class);user_calibration=$(calibration:user);user_calibration_file_path=$(calibration:user:file:path);new_user_calibration_file=$(calibration:user:file:new);file_path=$(output:file:path);new_file=$(output:file:new)">
-				<input pin="loudness" frame="1s" delta="0.15s" />
-				<xinput size="7">
+			<consumer create="PythonConsumer:file_storage" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class);file_path=$(output:file:path);new_file=$(output:file:new)">
+				<input pin="loudness" frame="1s" delta="0.5s" />
+				<xinput size="9">
+					<input pin="loudness-d" />
 					<input pin="pitch" />
+					<input pin="pitch-d" />
 					<input pin="energy" />
 					<input pin="jitter" />
 					<input pin="shimmer" />
@@ -189,7 +234,7 @@
 
 	-->
 	<gate open="$(calibration:user)">
-		<consumer create="PythonConsumer" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class);mean=true;file_path=$(calibration:user:file:path);new_file=$(calibration:user:file:new)">
+		<consumer create="PythonConsumer:file_storage" script="file_storage" syspath="..\scripts" optsstr="user_class=$(user:class);mean=true;file_path=$(calibration:user:file:path);new_file=$(calibration:user:file:new)">
 			<input pin="loudness" frame="1s" delta="0.15s" />
 			<xinput size="7">
 				<input pin="pitch" />

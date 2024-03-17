@@ -17,7 +17,7 @@ def check_trehshold(tresh):
 
 # The function to be called anytime a slider's value changes
 def update(val):
-    sh.send_data_network(client_socket, HOST, PORT, str(tresh_slider.val) + "\n")
+    sh.send_data(client_socket, HOST, PORT, str(tresh_slider.val) + "\n")
     bar[0].set_height(tresh_slider.val)
     fig.canvas.draw_idle()
 
@@ -98,5 +98,4 @@ if __name__ == "__main__":
         plt.show()
 
         # Close the socket
-        client_socket.close()
-        print("Socket closed")
+        sh.close_socket(client_socket, HOST, PORT)
