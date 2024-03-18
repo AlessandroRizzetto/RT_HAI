@@ -3,6 +3,7 @@ from tkinter import messagebox, ttk
 from subprocess import Popen, PIPE
 import os
 import json
+import time
 
 # variabili globali
 p = None
@@ -111,31 +112,41 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
                 setup_audio('audio_features.pipeline-config', 'output:file:save', 'true')
         # Avvio analisi audio
         # TO DO - Capire se è davvero necessario decidere se salvare le features in un file e il percorso
-        setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') # TO DO capire meglio
-        setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') # TO DO capire meglio
+        setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') 
+        setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') 
+        v = Popen(['python3', '../audio/scripts/feedback_execution.py'], stdin=PIPE)
         p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'], stdin=PIPE)
+        
     if is_online:
         print("ONLINE ANALYSIS")
         setup_audio('global.pipeline-config', 'audio:live', 'true')
-        setup_audio('audio_input.pipeline-config', 'audio:live:mic', 'false')
-        setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') # TO DO capire meglio
-        setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') # TO DO capire meglio
+        setup_audio('audio_input.pipeline-config', 'audio:live:mic', 'true')
+        setup_audio('audio_features.pipeline-config', 'output:file:save', 'true')
+        setup_audio('audio_features.pipeline-config', 'output:file:new', 'true')
+        setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') 
+        setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') 
         
         if vadCalibration:
             print("VAD Calibration")
-            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'true')
-            p = Popen(['python3', '../audio/scripts/treshold_calibration.py'], stdin=PIPE)
-            v = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/vad_calibration.pipeline'], stdin=PIPE)
-        elif userCalibration == 1 and not vadCalibration:
-            print("USER Calibration and Audio Analysis")
-            setup_audio('audio_features.pipeline-config', 'calibration:user', 'true')
-            setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'true')
-            p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'], stdin=PIPE)
-        elif userCalibration == 0 and not vadCalibration:
-            print("Audio Analysis")
             setup_audio('audio_features.pipeline-config', 'calibration:user', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
-            p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'], stdin=PIPE)
+            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'true')
+            p = Popen(['python3', '../audio/scripts/treshold_calibration.py'])
+            v = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/vad_calibration.pipeline'])
+        elif userCalibration == 1 and not vadCalibration:
+            print("USER Calibration and Audio Analysis")
+            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'false')
+            setup_audio('audio_features.pipeline-config', 'calibration:user', 'true')
+            setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'true')
+            v = Popen(['python3', '../audio/scripts/feedback_execution.py'])
+            p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
+        elif userCalibration == 0 and not vadCalibration:
+            print("Audio Analysis")
+            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'false')
+            setup_audio('audio_features.pipeline-config', 'calibration:user', 'false')
+            setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
+            v = Popen(['python3', '../audio/scripts/feedback_execution.py'])
+            p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
             
             
 
@@ -252,14 +263,16 @@ try:
     right_subtitle.pack(pady=10)
     # vad_check = tk.Checkbutton(right_frame, text="VAD", font=("Helvetica", 12))
     # vad_check.pack()
+    
     user_check_var = tk.IntVar()
     user_check = tk.Checkbutton(right_frame, text="Calibrate user audio", font=("Helvetica", 12), variable=user_check_var)
     user_check.pack()
-    
-    
-    start_VAD_button = tk.Button(right_frame, text="Start VAD configuration", command=lambda: start_audio_action(audio_entry="", is_online=True, audioLive=True, audioLiveMic=False, vadCalibration=True, userCalibration=False, userCalibrationFile=""), font=("Helvetica", 12))
+    start_VAD_button = tk.Button(right_frame, text="Start VAD configuration", command=lambda: start_audio_action(None, is_online=True, audioLive=True, audioLiveMic=False, vadCalibration=True, userCalibration=False, userCalibrationFile=""), font=("Helvetica", 12))
     start_VAD_button.pack(pady=10)
-    start_audio_button = tk.Button(right_frame, text="Start Audio Analysis", command=lambda: start_audio_action(audio_entry="", is_online=True, audioLive=True, audioLiveMic=False, vadCalibration=False, userCalibration=user_check_var.get(), userCalibrationFile=""), font=("Helvetica", 12))
+    
+    
+    
+    start_audio_button = tk.Button(right_frame, text="Start Audio Analysis", command=lambda: start_audio_action(None, is_online=True, audioLive=True, audioLiveMic=False, vadCalibration=False, userCalibration=user_check_var.get(), userCalibrationFile=""), font=("Helvetica", 12))
     start_audio_button.pack(pady=10)
 
     root.mainloop()

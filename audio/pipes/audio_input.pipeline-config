@@ -1,5 +1,5 @@
 # $(bool) if live input is selected, use microphone (otherwise use soundcard)
-audio:live:mic = false
+audio:live:mic = true
 
 # $(string) if live input is not selected, this wav file will be used
 audio:file = ..\data\audio.wav

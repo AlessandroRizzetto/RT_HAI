@@ -5,6 +5,7 @@ import socket_handler as sh
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, Slider
+from matplotlib.widgets import Button
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 3333      # The port used by the server
@@ -80,13 +81,16 @@ if __name__ == "__main__":
     tresh_slider.on_changed(update)
 
     # Create a `matplotlib.widgets.Button` to reset the sliders to initial values.
+    # Initialize the client_socket variable
+    client_socket = None
+
     resetax = fig.add_axes([0.05, 0.1, 0.15, 0.04])
     button = Button(resetax, 'Reset', hovercolor='0.975')
     button.on_clicked(reset)
 
     # Set the window position
     mngr = plt.get_current_fig_manager()
-    mngr.window.setGeometry(250,350,300,400)
+    mngr.window.wm_geometry("250x350+300+400")
 
     # Start the socket
     client_socket = sh.create_socket(HOST, PORT, "send")
