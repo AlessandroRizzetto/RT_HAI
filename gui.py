@@ -7,8 +7,32 @@ import json
 # variabili globali
 p = None
 m = None
+v = None
+
+def setup_audio(fileName, parameterToChange, value):
+    file_paths = {
+        'audio_features.pipeline-config': '../audio/pipes/audio_features.pipeline-config',
+        'audio_input.pipeline-config': '../audio/pipes/audio_input.pipeline-config',
+        'vad_filter.pipeline-config': '../audio/pipes/vad_filter.pipeline-config',
+        'global.pipeline-config': '../audio/pipes/global.pipeline-config'
+    }
+    
+    file_path = file_paths.get(fileName)
+    if file_path:
+        with open(file_path, 'r') as file:
+            old_configs = file.readlines()
+        
+        with open(file_path, 'w') as file:
+            for i, line in enumerate(old_configs):
+                if parameterToChange == line.split(" = ")[0]:
+                    old_configs[i] = f'{parameterToChange} = {value}\n'
+                    break
+            file.writelines(old_configs)
+
+        
 
 def start_video_action(is_online, is_configuration, crouch, hands, body_direction, configuration_time, path_to_video):
+    print(path_to_video)
     global m
     if not is_configuration and not is_online: 
         print("OFFLINE ANALYSIS")
@@ -70,25 +94,51 @@ def start_video_action(is_online, is_configuration, crouch, hands, body_directio
             print("Nessuna opzione selezionata")
         
 
-def start_audio_action():
-    print("Start audio")
+def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibration, userCalibration, userCalibrationFile):
     global p
-    p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/main.pipeline'], stdin=PIPE)
+    global v
+    if not is_online:
+        print("OFFLINE ANALYSIS")
+        if audio_path != "":
+            print("Using audio file: ", audio_path)
+        if not audioLive:
+            setup_audio('global.pipeline-config', 'audio:live', 'false')
+            if audio_path != "":
+                # check if audio path is wav file
+                if audio_path.endswith('.wav'):
+                    
+                    setup_audio('audio_input.pipeline-config', 'audio:file', audio_path)
+                setup_audio('audio_features.pipeline-config', 'output:file:save', 'true')
+        # Avvio analisi audio
+        # TO DO - Capire se è davvero necessario decidere se salvare le features in un file e il percorso
+        setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') # TO DO capire meglio
+        setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') # TO DO capire meglio
+        p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'], stdin=PIPE)
+    if is_online:
+        print("ONLINE ANALYSIS")
+        setup_audio('global.pipeline-config', 'audio:live', 'true')
+        setup_audio('audio_input.pipeline-config', 'audio:live:mic', 'false')
+        setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') # TO DO capire meglio
+        setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') # TO DO capire meglio
+        
+        if vadCalibration:
+            print("VAD Calibration")
+            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'true')
+            p = Popen(['python3', '../audio/scripts/treshold_calibration.py'], stdin=PIPE)
+            v = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/vad_calibration.pipeline'], stdin=PIPE)
+        elif userCalibration == 1 and not vadCalibration:
+            print("USER Calibration and Audio Analysis")
+            setup_audio('audio_features.pipeline-config', 'calibration:user', 'true')
+            setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'true')
+            p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'], stdin=PIPE)
+        elif userCalibration == 0 and not vadCalibration:
+            print("Audio Analysis")
+            setup_audio('audio_features.pipeline-config', 'calibration:user', 'false')
+            setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
+            p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'], stdin=PIPE)
+            
+            
 
-def stop_audio(p):
-    p.communicate(input='\n'.encode())
-
-def stop_video(m):
-    print("Stop")
-    m.stdin.write('\n'.encode())
-
-def stop_analysis(m, p):
-    print("Stop analysis")
-    if m is not None:
-        print("Stop video")
-        m.terminate()
-    if p is not None:
-        p.communicate(input='\n'.encode())
 
 try:
     os.chdir('./bin/')
@@ -125,7 +175,7 @@ try:
     path_frame_video = tk.Frame(left_frame)
     path_frame_video.pack(pady=(0, 10), fill='x')
     path_to_video_label = tk.Label(path_frame_video, text="Path to video:", font=("Helvetica", 12))
-    path_to_video_label.pack(side='left', padx=(0, 5))
+    path_to_video_label.pack(side='top', pady=(0, 5))
     video_entry = tk.Entry(path_frame_video, font=("Helvetica", 12))
     video_entry.pack(side='right', fill='x', expand=True)
 
@@ -139,17 +189,20 @@ try:
 
     # Cella destra
     right_frame = tk.Frame(frame)
-    right_frame.pack(side='right', fill='both', expand=True, padx=(5, 10))
+    right_frame.pack(side='right', fill='both', expand=True, padx=(5, 5))
+    # Sottotitolo "AUDIO"
     right_subtitle = tk.Label(right_frame, text="AUDIO", font=("Helvetica", 12))
     right_subtitle.pack(pady=10)
-    vad_check = tk.Checkbutton(right_frame, text="VAD", font=("Helvetica", 12))
-    vad_check.pack()
-    user_check = tk.Checkbutton(right_frame, text="Utente", font=("Helvetica", 12))
-    user_check.pack()
-    audio_entry = tk.Entry(right_frame, font=("Helvetica", 12))
-    audio_entry.pack(pady=5)
-    start_audio_button = tk.Button(right_frame, text="Start Audio Analysis", command=start_audio_action, font=("Helvetica", 12))
-    start_audio_button.pack(pady=10)
+    # Etichetta e campo per il percorso dell'audio
+    path_frame_audio = tk.Frame(right_frame)
+    path_frame_audio.pack(pady=(0, 10), fill='x')
+    path_to_audio_label = tk.Label(path_frame_audio, text="Path to audio:", font=("Helvetica", 12))
+    path_to_audio_label.pack(side='top', pady=(0, 5))
+    audio_entry = tk.Entry(path_frame_audio, font=("Helvetica", 12))
+    audio_entry.pack(side='right', fill='x', expand=True)
+    
+    start_audio_button = tk.Button(right_frame, text="Start Audio Analysis", command=lambda: start_audio_action(audio_entry.get(), is_online=False, audioLive=False, audioLiveMic=False, vadCalibration=False, userCalibration=False, userCalibrationFile=""), font=("Helvetica", 12))
+    start_audio_button.pack(side='bottom', pady=10)
 
     #######################################################################################################################################################
 
@@ -171,14 +224,16 @@ try:
     left_subtitle = tk.Label(left_frame, text="VIDEO", font=("Helvetica", 12))
     left_subtitle.pack(pady=10)
     crouch_var = tk.IntVar()
-    crouch_check = tk.Checkbutton(left_frame, text="Crouch", font=("Helvetica", 12), variable=crouch_var)
+    crouch_check = tk.Checkbutton(left_frame, text="Calibrate Crouch", font=("Helvetica", 12), variable=crouch_var)
     crouch_check.pack()
     hands_analysys_var = tk.IntVar()
-    hands_analysys_check = tk.Checkbutton(left_frame, text="Hands", font=("Helvetica", 12), variable=hands_analysys_var)
+    hands_analysys_check = tk.Checkbutton(left_frame, text="Calibrate Hands Distance", font=("Helvetica", 12), variable=hands_analysys_var)
     hands_analysys_check.pack()
     body_direction_var = tk.IntVar()
-    body_direction_check = tk.Checkbutton(left_frame, text="Body Direction", font=("Helvetica", 12), variable=body_direction_var)
+    body_direction_check = tk.Checkbutton(left_frame, text="Calibrate Body Direction", font=("Helvetica", 12), variable=body_direction_var)
     body_direction_check.pack()
+    configuration_time_label = tk.Label(left_frame, text="Configuration time (s):", font=("Helvetica", 12))
+    configuration_time_label.pack(pady=(10, 0))
     configuration_time_entry = tk.Entry(left_frame, font=("Helvetica", 12))
     configuration_time_entry.pack(pady=5)
     start_configuration_button = tk.Button(left_frame, text="Start Body Configuration", command=lambda: start_video_action(True, True, crouch_var.get(), hands_analysys_var.get(), body_direction_var.get(), configuration_time_entry.get(), None), font=("Helvetica", 12))
@@ -195,18 +250,34 @@ try:
     right_frame.pack(side='right', fill='both', expand=True, padx=(5, 10))
     right_subtitle = tk.Label(right_frame, text="AUDIO", font=("Helvetica", 12))
     right_subtitle.pack(pady=10)
-    vad_check = tk.Checkbutton(right_frame, text="VAD", font=("Helvetica", 12))
-    vad_check.pack()
-    user_check = tk.Checkbutton(right_frame, text="Utente", font=("Helvetica", 12))
+    # vad_check = tk.Checkbutton(right_frame, text="VAD", font=("Helvetica", 12))
+    # vad_check.pack()
+    user_check_var = tk.IntVar()
+    user_check = tk.Checkbutton(right_frame, text="Calibrate user audio", font=("Helvetica", 12), variable=user_check_var)
     user_check.pack()
-    audio_entry = tk.Entry(right_frame, font=("Helvetica", 12))
-    audio_entry.pack(pady=5)
-    start_VAD_button = tk.Button(right_frame, text="Start VAD configuration", command=start_audio_action, font=("Helvetica", 12))
+    
+    
+    start_VAD_button = tk.Button(right_frame, text="Start VAD configuration", command=lambda: start_audio_action(audio_entry="", is_online=True, audioLive=True, audioLiveMic=False, vadCalibration=True, userCalibration=False, userCalibrationFile=""), font=("Helvetica", 12))
     start_VAD_button.pack(pady=10)
-    start_audio_button = tk.Button(right_frame, text="Start Audio Analysis", command=start_audio_action, font=("Helvetica", 12))
+    start_audio_button = tk.Button(right_frame, text="Start Audio Analysis", command=lambda: start_audio_action(audio_entry="", is_online=True, audioLive=True, audioLiveMic=False, vadCalibration=False, userCalibration=user_check_var.get(), userCalibrationFile=""), font=("Helvetica", 12))
     start_audio_button.pack(pady=10)
 
     root.mainloop()
 
 except Exception as e:
     messagebox.showerror("Errore", f"Si è verificato un errore: {e}")
+
+# def stop_audio(p):
+#     p.communicate(input='\n'.encode())
+
+# def stop_video(m):
+#     print("Stop")
+#     m.stdin.write('\n'.encode())
+
+# def stop_analysis(m, p):
+#     print("Stop analysis")
+#     if m is not None:
+#         print("Stop video")
+#         m.terminate()
+#     if p is not None:
+#         p.communicate(input='\n'.encode())

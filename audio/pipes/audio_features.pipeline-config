@@ -5,7 +5,7 @@ features:mffc = false
 user:class = CLASSE
 
 # (bool) calibration of user
-calibration:user = false
+calibration:user = true
 
 # $(string) if user calibration is selected, use this path to store features
 calibration:user:file:path = ..\data\userCalibration.csv

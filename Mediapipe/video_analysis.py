@@ -268,7 +268,8 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
         else:
             body_text = "Body Forward"
             LAST_MESSAGE = serial_communication("GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
-        # print("Body direction: ", body_text)
+        # if body_text != "Body Forward":
+        #     print("Body direction: ", body_text)
 
         featuresTable[f'body_direction'].append(body_text)
         featuresTable[f'head_direction'].append(text)
@@ -342,10 +343,10 @@ def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle
         crouch_is_good = False
         featuresTable[f'crouch'].append("Crouched") 
         # print("Crouch detected, yTorso is too small")
-    elif abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
-        crouch_is_good = False
-        featuresTable[f'crouch'].append("Crouched") 
-        # print("Crouch detected, triangle area is too small")
+    # elif abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
+    #     crouch_is_good = False
+    #     featuresTable[f'crouch'].append("Crouched") 
+    #     # print("Crouch detected, triangle area is too small")
     else:
         crouch_is_good = True
         featuresTable[f'crouch'].append("Not crouched")
