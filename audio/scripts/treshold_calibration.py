@@ -90,7 +90,10 @@ if __name__ == "__main__":
 
     # Set the window position
     mngr = plt.get_current_fig_manager()
-    mngr.window.wm_geometry("250x350+300+400")
+    try:
+        mngr.window.wm_geometry("250x350+300+400")
+    except:
+        pass
 
     # Start the socket
     client_socket = sh.create_socket(HOST, PORT, "send")

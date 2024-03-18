@@ -658,7 +658,7 @@ if __name__ == "__main__":
         print("Usage: python video_analysis.py <ssi_is_connected> <is_online>")
         sys.exit(1)
 
-    ssi_is_connected = sys.argv[1].lower() == 'false' 
+    ssi_is_connected = sys.argv[1].lower() == 'true' 
     is_online = sys.argv[2].lower() == 'true'
     configuration_time = configData["configuration_time"] 
     # create a socket
