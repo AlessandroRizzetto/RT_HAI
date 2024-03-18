@@ -44,7 +44,7 @@ arduino_is_connected = False
 
 
 def manage_socket(host, port, ssi_is_connected, state):
-    print(state, ssi_is_connected)
+    print("SSI is connected: ", ssi_is_connected)
     if state == "start":
         # ssi_is_connected = input("Is the SSI connected? Press 0 if it is not connected, 1 if it is connected")
         if ssi_is_connected == True:

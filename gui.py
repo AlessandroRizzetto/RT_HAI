@@ -9,6 +9,7 @@ import time
 p = None
 m = None
 v = None
+pythonCommand = "python3"
 
 def setup_audio(fileName, parameterToChange, value):
     file_paths = {
@@ -33,7 +34,7 @@ def setup_audio(fileName, parameterToChange, value):
         
 
 def start_video_action(is_online, is_configuration, crouch, hands, body_direction, configuration_time, path_to_video):
-    print(path_to_video)
+    # print(path_to_video)
     global m
     if not is_configuration and not is_online: 
         print("OFFLINE ANALYSIS")
@@ -45,10 +46,10 @@ def start_video_action(is_online, is_configuration, crouch, hands, body_directio
                 f.seek(0)
                 json.dump(configurationData, f, indent=4)
                 f.truncate()
-            m = Popen(['python3', '../Mediapipe/video_analysis.py' , 'false', 'false'], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/video_analysis.py' , 'false', 'false'], stdin=PIPE)
         else:
             print("Path to video is empty, using default video")
-            m = Popen(['python3', '../Mediapipe/video_analysis.py' , 'false', 'false'], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/video_analysis.py' , 'false', 'false'], stdin=PIPE)
     elif not is_configuration and is_online:
         print("ONLINE ANALYSIS")
         if configuration_time != "" and configuration_time != None:
@@ -60,10 +61,10 @@ def start_video_action(is_online, is_configuration, crouch, hands, body_directio
                 f.seek(0)
                 json.dump(configurationData, f, indent=4)
                 f.truncate()
-            m = Popen(['python3', '../Mediapipe/video_analysis.py' , 'false', 'true'], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/video_analysis.py' , 'false', 'true'], stdin=PIPE)
         else:
             print("Configuration time is empty, using default configuration time")
-            m = Popen(['python3', '../Mediapipe/video_analysis.py' , 'false', 'true'], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/video_analysis.py' , 'false', 'true'], stdin=PIPE)
     elif is_configuration:
         print("ONLINE ANALYSIS - CONFIGURATION")
             
@@ -77,19 +78,19 @@ def start_video_action(is_online, is_configuration, crouch, hands, body_directio
                 json.dump(configurationData, f, indent=4)
                 f.truncate()
         if crouch == 1 and hands == 0 and body_direction == 0:
-            m = Popen(['python3', '../Mediapipe/scripts/bodyCalibrations.py', "true", "false", "false"], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/scripts/bodyCalibrations.py', "true", "false", "false"], stdin=PIPE)
         elif hands == 1 and crouch == 0 and body_direction == 0:
-            m = Popen(['python3', '../Mediapipe/scripts/bodyCalibrations.py', "false", "true", "false"], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/scripts/bodyCalibrations.py', "false", "true", "false"], stdin=PIPE)
         elif body_direction == 1 and crouch == 0 and hands == 0:
-            m = Popen(['python3', '../Mediapipe/scripts/bodyCalibrations.py', "false", "false", "true"], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/scripts/bodyCalibrations.py', "false", "false", "true"], stdin=PIPE)
         elif crouch == 1 and hands == 1 and body_direction == 0:
-            m = Popen(['python3', '../Mediapipe/scripts/bodyCalibrations.py', "true", "true", "false"], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/scripts/bodyCalibrations.py', "true", "true", "false"], stdin=PIPE)
         elif crouch == 1 and body_direction == 1 and hands == 0:
-            m = Popen(['python3', '../Mediapipe/scripts/bodyCalibrations.py', "true", "false", "true"], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/scripts/bodyCalibrations.py', "true", "false", "true"], stdin=PIPE)
         elif hands == 1 and body_direction == 1 and crouch == 0:
-            m = Popen(['python3', '../Mediapipe/scripts/bodyCalibrations.py', "false", "true", "true"], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/scripts/bodyCalibrations.py', "false", "true", "true"], stdin=PIPE)
         elif crouch == 1 and hands == 1 and body_direction == 1:
-            m = Popen(['python3', '../Mediapipe/scripts/bodyCalibrations.py', "true", "true", "true"], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/scripts/bodyCalibrations.py', "true", "true", "true"], stdin=PIPE)
         else:
             # errore nessuna opzione selezionata
             print("Nessuna opzione selezionata")
@@ -100,8 +101,9 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
     global v
     if not is_online:
         print("OFFLINE ANALYSIS")
-        if audio_path != "":
-            print("Using audio file: ", audio_path)
+        setup_audio('global.pipeline-config', 'audio:live:mic', 'false')
+                   
+          
         if not audioLive:
             setup_audio('global.pipeline-config', 'audio:live', 'false')
             if audio_path != "":
@@ -110,12 +112,20 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
                     
                     setup_audio('audio_input.pipeline-config', 'audio:file', audio_path)
                 setup_audio('audio_features.pipeline-config', 'output:file:save', 'true')
-        # Avvio analisi audio
-        # TO DO - Capire se è davvero necessario decidere se salvare le features in un file e il percorso
-        setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') 
-        setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') 
-        v = Popen(['python3', '../audio/scripts/feedback_execution.py'], stdin=PIPE)
-        p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'], stdin=PIPE)
+            print("Using audio file: ", audio_path)
+        if vadCalibration:
+            print("VAD Calibration")
+            setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
+            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'true')
+            p = Popen([pythonCommand, '../audio/scripts/treshold_calibration.py'])
+            v = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/vad_calibration.pipeline'])
+        elif not vadCalibration:
+            # Avvio analisi audio
+            print("Audio Analysis")
+            setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') 
+            setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') 
+            v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
+            p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
         
     if is_online:
         print("ONLINE ANALYSIS")
@@ -123,29 +133,27 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
         setup_audio('audio_input.pipeline-config', 'audio:live:mic', 'true')
         setup_audio('audio_features.pipeline-config', 'output:file:save', 'true')
         setup_audio('audio_features.pipeline-config', 'output:file:new', 'true')
-        setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') 
-        setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') 
         
         if vadCalibration:
             print("VAD Calibration")
             setup_audio('audio_features.pipeline-config', 'calibration:user', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
             setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'true')
-            p = Popen(['python3', '../audio/scripts/treshold_calibration.py'])
+            p = Popen([pythonCommand, '../audio/scripts/treshold_calibration.py'])
             v = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/vad_calibration.pipeline'])
         elif userCalibration == 1 and not vadCalibration:
             print("USER Calibration and Audio Analysis")
             setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user', 'true')
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'true')
-            v = Popen(['python3', '../audio/scripts/feedback_execution.py'])
+            v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
             p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
         elif userCalibration == 0 and not vadCalibration:
             print("Audio Analysis")
             setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
-            v = Popen(['python3', '../audio/scripts/feedback_execution.py'])
+            v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
             p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
             
             
@@ -155,7 +163,7 @@ try:
     os.chdir('./bin/')
     root = tk.Tk()
     root.title("HUMAN-AGENT INTERACTION SYSTEM - GUI")
-    # root.geometry("1000x1000")
+    root.geometry("1000x1000")
 
     # Inserisci immagine logo
     logo = tk.PhotoImage(file="../HAI_logo.png")
@@ -211,6 +219,8 @@ try:
     path_to_audio_label.pack(side='top', pady=(0, 5))
     audio_entry = tk.Entry(path_frame_audio, font=("Helvetica", 12))
     audio_entry.pack(side='right', fill='x', expand=True)
+    start_VAD_button = tk.Button(right_frame, text="Start VAD configuration", command=lambda: start_audio_action(audio_entry.get(), is_online=False, audioLive=False, audioLiveMic=False, vadCalibration=True, userCalibration=False, userCalibrationFile=""), font=("Helvetica", 12))
+    start_VAD_button.pack(pady=10)
     
     start_audio_button = tk.Button(right_frame, text="Start Audio Analysis", command=lambda: start_audio_action(audio_entry.get(), is_online=False, audioLive=False, audioLiveMic=False, vadCalibration=False, userCalibration=False, userCalibrationFile=""), font=("Helvetica", 12))
     start_audio_button.pack(side='bottom', pady=10)
@@ -264,13 +274,14 @@ try:
     # vad_check = tk.Checkbutton(right_frame, text="VAD", font=("Helvetica", 12))
     # vad_check.pack()
     
-    user_check_var = tk.IntVar()
-    user_check = tk.Checkbutton(right_frame, text="Calibrate user audio", font=("Helvetica", 12), variable=user_check_var)
-    user_check.pack()
+    
     start_VAD_button = tk.Button(right_frame, text="Start VAD configuration", command=lambda: start_audio_action(None, is_online=True, audioLive=True, audioLiveMic=False, vadCalibration=True, userCalibration=False, userCalibrationFile=""), font=("Helvetica", 12))
     start_VAD_button.pack(pady=10)
-    
-    
+    mini_separator_orizzontal = ttk.Separator(right_frame, orient='horizontal')
+    mini_separator_orizzontal.pack(fill='x', pady=10)
+    user_check_var = tk.IntVar()
+    user_check = tk.Checkbutton(right_frame, text="Calibrate user audio", font=("Helvetica", 12), variable=user_check_var, pady=25)
+    user_check.pack()
     
     start_audio_button = tk.Button(right_frame, text="Start Audio Analysis", command=lambda: start_audio_action(None, is_online=True, audioLive=True, audioLiveMic=False, vadCalibration=False, userCalibration=user_check_var.get(), userCalibrationFile=""), font=("Helvetica", 12))
     start_audio_button.pack(pady=10)
