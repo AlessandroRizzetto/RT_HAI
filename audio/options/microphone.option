@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <options>
-    <item name="device" type="CHAR" num="1024" value="Microfono (Realtek(R) Audio)" lock="true" help="audio device name (if empty a dialog will be shown)" />
+    <item name="device" type="CHAR" num="1024" value="Gruppo microfoni (Realtek(R) Au" lock="true" help="audio device name (if empty a dialog will be shown)" />
     <item name="remember" type="BOOL" num="1" value="true" lock="true" help="remember selected audio device" />
     <item name="sr" type="DOUBLE" num="1" value="4.800000e+04" lock="true" help="sample rate in Hz" />
     <item name="size" type="DOUBLE" num="1" value="1.000000e-01" lock="true" help="block size in seconds (deprecated)" />

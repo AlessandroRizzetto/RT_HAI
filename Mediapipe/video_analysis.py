@@ -18,27 +18,15 @@ import keyboard
 
 COORDINATES = ['x', 'y', 'z']
 HOST = '127.0.0.1'  # The server's hostname or IP address
-PORT = 2222      # The port used by the server
+PORT = 4444      # The port used by the server
 SYNC = 1111
 NETWORK_MESSAGE = 'SSI:STRT:RUN1\0'
 start_time = None
 elapsed_time = None
 user_body = {}
-arduino_is_connected = False
 # ssi_is_connected = sys.argv[1] if len(sys.argv) > 1 else 0
 # is_online = sys.argv[2] if len(sys.argv) > 2 else 1
 # configuration_time = sys.argv[3] if len(sys.argv) > 3 else 5
-
-
-# try: # to check if the arduino is connected to the PC and manage errors related to the serial communication
-#     ser = serial.Serial('COM5', 9600, timeout=1)
-#     ser.flush()
-#     ser.reset_input_buffer()
-#     arduino_is_connected = True
-# except serial.SerialException as e:
-#     print("The Arduino is not connected to the PC, using the test mode")
-#     arduino_is_connected = False
-#     pass
 
 
 
@@ -70,60 +58,114 @@ def manage_socket(host, port, ssi_is_connected, state):
             return None, ssi_is_connected
 
 
-def serial_communication(message, LAST_MESSAGE, value, arduino_is_connected = arduino_is_connected):
+def execute_feedback(client_socket, message, LAST_MESSAGE, value):
     # --- ARDUINO-PC SERIAL COMMUNICATION SECTION --
-    # COM4 is the port number of the Arduino
-    # if arduino_is_connected:
-    #     # print(LAST_MESSAGE, message)
+    # COM5 is the port number of the Arduino
+    # print(LAST_MESSAGE, message)
 
-    #     if message == "HANDS_NOT_VISIBILITY" and LAST_MESSAGE[0] == 0:
-    #         ser.write(f"<v,4,1,30,60,10>\n".encode('utf-8')) # sinusoide
-    #         print("Message sent to the arduino, hands not visible")
-    #         LAST_MESSAGE[0] = 1
-    #     if message == "HANDS_VISIBILITY" and LAST_MESSAGE[0] == 1:
-    #         ser.write(f"<v,4,1,0,0,0>\n".encode('utf-8'))
-    #         print("Message sent to the arduino, hands visible")
-    #         LAST_MESSAGE[0] = 0
+    if message == "HANDS_NOT_VISIBILITY" and LAST_MESSAGE[0] == 0:
+        send_data_network(client_socket, json.dumps({
+            "hands_visibility": {
+                "message": message,
+                "value": None
+            }
+        }) + "\n")
+        print("Message sent to the arduino, hands not visible")
+        LAST_MESSAGE[0] = 1
+    if message == "HANDS_VISIBILITY" and LAST_MESSAGE[0] == 1:
+        send_data_network(client_socket, json.dumps({
+            "hands_visibility": {
+                "message": message,
+                "value": None
+            }
+        }) + "\n")
+        print("Message sent to the arduino, hands visible")
+        LAST_MESSAGE[0] = 0
 
-    #     if message == "HANDS_TOUCHING" and LAST_MESSAGE[1] == 0:
-    #         ser.write(f"<v,4,0,40,40,0>\n".encode('utf-8'))
-    #         print("Message sent to the arduino, hands touching")
-    #         LAST_MESSAGE[1] = 1
-    #     if message == "HANDS_NOT_TOUCHING" and LAST_MESSAGE[1] == 1:
-    #         ser.write(f"<v,4,0,0,0,0>\n".encode('utf-8'))
-    #         print("Message sent to the arduino, hands not touching")
-    #         LAST_MESSAGE[1] = 0
+    if message == "HANDS_TOUCHING" and LAST_MESSAGE[1] == 0:
+        send_data_network(client_socket, json.dumps({
+            "hands_touching": {
+                "message": message,
+                "value": None
+            }
+        }) + "\n")
+        print("Message sent to the arduino, hands touching")
+        LAST_MESSAGE[1] = 1
+    if message == "HANDS_NOT_TOUCHING" and LAST_MESSAGE[1] == 1:
+        send_data_network(client_socket, json.dumps({
+            "hands_touching": {
+                "message": message,
+                "value": None
+            }
+        }) + "\n")
+        print("Message sent to the arduino, hands not touching")
+        LAST_MESSAGE[1] = 0
 
-    #     if message == "BAD_BODY_DIRECTION" and LAST_MESSAGE[2] == 0:
-    #         if value == "Body Right":
-    #             ser.write(f"<v,3,0,30,30,0>\n".encode('utf-8'))
-    #             print("Message sent to the arduino, body right")
-    #         elif value == "Body Left":
-    #             ser.write(f"<v,2,0,30,30,0>\n".encode('utf-8'))
-    #             print("Message sent to the arduino, body left")
-    #         LAST_MESSAGE[2] = 1
-    #     if message == "GOOD_BODY_DIRECTION" and LAST_MESSAGE[2] == 1:
-    #         ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
-    #         print("Message sent to the arduino, body forward")
-    #         LAST_MESSAGE[2] = 0
+    if message == "BAD_BODY_DIRECTION" and LAST_MESSAGE[2] == 0:
+        if value == "Body Right":
+            send_data_network(client_socket, json.dumps({
+                "body_direction": {
+                    "message": message,
+                    "value": value
+                }
+            }) + "\n")
+            print("Message sent to the arduino, body right")
+        elif value == "Body Left":
+            send_data_network(client_socket, json.dumps({
+                "body_direction": {
+                    "message": message,
+                    "value": value
+                }
+            }) + "\n")
+            print("Message sent to the arduino, body left")
+        LAST_MESSAGE[2] = 1
+    if message == "GOOD_BODY_DIRECTION" and LAST_MESSAGE[2] == 1:
+        send_data_network(client_socket, json.dumps({
+            "body_direction": {
+                "message": message,
+                "value": None
+            }
+        }) + "\n")
+        print("Message sent to the arduino, body forward")
+        LAST_MESSAGE[2] = 0
 
-    #     if message == "CROUCH" and LAST_MESSAGE[3] == 0:
-    #         ser.write(f"<v,5,1,20,40,0>\n".encode('utf-8'))
-    #         print("Message sent to the arduino, crouch")
-    #         LAST_MESSAGE[3] = 1
-    #     if message == "NOT_CROUCH" and LAST_MESSAGE[3] == 1:
-    #         ser.write(f"<v,5,0,0,0,0>\n".encode('utf-8'))
-    #         print("Message sent to the arduino, not crouch")
-    #         LAST_MESSAGE[3] = 0
+    if message == "CROUCH" and LAST_MESSAGE[3] == 0:
+        send_data_network(client_socket, json.dumps({
+            "crouch": {
+                "message": message,
+                "value": None
+            }
+        }) + "\n")
+        print("Message sent to the arduino, crouch")
+        LAST_MESSAGE[3] = 1
+    if message == "NOT_CROUCH" and LAST_MESSAGE[3] == 1:
+        send_data_network(client_socket, json.dumps({
+            "crouch": {
+                "message": message,
+                "value": None
+            }
+        }) + "\n")
+        print("Message sent to the arduino, not crouch")
+        LAST_MESSAGE[3] = 0
 
-    #     if message == "BAD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 0:
-    #         ser.write(f"<h,0,0,40,40,5>\n".encode('utf-8'))
-    #         print("Message sent to the arduino, head not forward")
-    #         LAST_MESSAGE[4] = 1
-    #     if message == "GOOD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 1:
-    #         ser.write(f"<h,0,0,0,0,5>\n".encode('utf-8'))
-    #         print("Message sent to the arduino, head forward")
-    #         LAST_MESSAGE[4] = 0
+    if message == "BAD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 0:
+        send_data_network(client_socket, json.dumps({
+            "head_direction": {
+                "message": message,
+                "value": value
+            }
+        }) + "\n")
+        print("Message sent to the arduino, head not forward")
+        LAST_MESSAGE[4] = 1
+    if message == "GOOD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 1:
+        send_data_network(client_socket, json.dumps({
+            "head_direction": {
+                "message": message,
+                "value": None
+            }
+        }) + "\n")
+        print("Message sent to the arduino, head forward")
+        LAST_MESSAGE[4] = 0
             
     return LAST_MESSAGE
 
@@ -261,13 +303,13 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
             text = "Looking Forward"
         if body_y < - configData["body_y"]:
             body_text = "Body Right"
-            LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
+            LAST_MESSAGE = execute_feedback(client_socket, "BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
         elif body_y > configData["body_y"]:
             body_text = "Body Left"
-            LAST_MESSAGE = serial_communication("BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
+            LAST_MESSAGE = execute_feedback(client_socket, "BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
         else:
             body_text = "Body Forward"
-            LAST_MESSAGE = serial_communication("GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
+            LAST_MESSAGE = execute_feedback(client_socket, "GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
         # if body_text != "Body Forward":
         #     print("Body direction: ", body_text)
 
@@ -281,10 +323,10 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
             # print("Most frequent head direction: ", most_frequent_head_direction)
             if most_frequent_head_direction == "Looking Forward":
                 # print("sent message to the arduino, good head direction")
-                LAST_MESSAGE = serial_communication("GOOD_HEAD_DIRECTION", LAST_MESSAGE, 0)
+                LAST_MESSAGE = execute_feedback(client_socket, "GOOD_HEAD_DIRECTION", LAST_MESSAGE, 0)
             else:
                 # print("sent message to the arduino, bad head direction")
-                LAST_MESSAGE = serial_communication("BAD_HEAD_DIRECTION", LAST_MESSAGE, most_frequent_head_direction)
+                LAST_MESSAGE = execute_feedback(client_socket, "BAD_HEAD_DIRECTION", LAST_MESSAGE, most_frequent_head_direction)
 
         # Display the nose and body direction
         nose_3d_projection, _ = cv2.projectPoints(nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
@@ -301,7 +343,7 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
         cv2.putText(image, "y: " + str(np.round(y, 2)), (500, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         cv2.putText(image, "z: " + str(np.round(z, 2)), (500, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
-    # LAST_MESSAGE = serial_communication("HEAD", LAST_MESSAGE, y)
+    # LAST_MESSAGE = execute_feedback("HEAD", LAST_MESSAGE, y)
     return text
         
 def body_settings(client_socket, dataTable, LAST_MESSAGE): # function to set the body of the user as the standard one
@@ -352,9 +394,9 @@ def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle
         featuresTable[f'crouch'].append("Not crouched")
     # if the user is crouching, send a message to the arduino to turn on the vibration
     if abs(yTorso) < abs(standart_yTorso * yTorso_proportion) or abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
-        LAST_MESSAGE = serial_communication("CROUCH", LAST_MESSAGE, 0)
+        LAST_MESSAGE = execute_feedback(client_socket, "CROUCH", LAST_MESSAGE, 0)
     else:
-        LAST_MESSAGE = serial_communication("NOT_CROUCH", LAST_MESSAGE, 0)
+        LAST_MESSAGE = execute_feedback(client_socket, "NOT_CROUCH", LAST_MESSAGE, 0)
 
 def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, configData):
     # calculate the distance between the hands
@@ -362,15 +404,15 @@ def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, config
     # print("hands_distance: ", hands_distance)
     hands_threshold = configData["hands_distance"] + 0.1
     if hands_distance < hands_threshold:
-        LAST_MESSAGE = serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
+        LAST_MESSAGE = execute_feedback(client_socket, "HANDS_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands touching")
         # print("Hands touching")
-        # serial_communication("HANDS_TOUCHING", LAST_MESSAGE, 0)
+        # execute_feedback("HANDS_TOUCHING", LAST_MESSAGE, 0)
     else:
-        LAST_MESSAGE = serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
+        LAST_MESSAGE = execute_feedback(client_socket, "HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands not touching")
         # print("Hands not touching")
-        # serial_communication("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
+        # execute_feedback("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
     return hands_distance
 
 def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable, configData):
@@ -381,11 +423,11 @@ def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable, conf
         hands_are_visible = False
         featuresTable[f'hands_visibility'].append("Hands not visible")
         #print("Hands not visible")
-        LAST_MESSAGE = serial_communication("HANDS_NOT_VISIBILITY", LAST_MESSAGE, 0)
+        LAST_MESSAGE = execute_feedback(client_socket, "HANDS_NOT_VISIBILITY", LAST_MESSAGE, 0)
     else:
         hands_are_visible = True
         featuresTable[f'hands_visibility'].append("Hands visible")
-        LAST_MESSAGE = serial_communication("HANDS_VISIBILITY", LAST_MESSAGE, 0)
+        LAST_MESSAGE = execute_feedback(client_socket, "HANDS_VISIBILITY", LAST_MESSAGE, 0)
         #print("Hands visible")
     
     
@@ -466,8 +508,7 @@ def mediaPipe(client_socket, ssi_is_connected, configData, is_online, configurat
     featuresTable[f'hands_distance'] = []
     featuresTable[f'hands_visibility'] = []    
         
-    
-    
+    send_data_network(client_socket, "SSI:STRT:VIDEO_APTIC")
         
     with open("landmarks.stream~", "a+") as f:
         with holistic as pose:
@@ -636,6 +677,8 @@ def mediaPipe(client_socket, ssi_is_connected, configData, is_online, configurat
 
     cap.release()
     cv2.destroyAllWindows()
+
+    send_data_network(client_socket, "SSI:STOP:VIDEO_APTIC")
     
     # offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
     manage_socket(HOST, PORT, ssi_is_connected, "stop")

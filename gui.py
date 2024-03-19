@@ -1,15 +1,22 @@
+import subprocess
 import tkinter as tk
 from tkinter import messagebox, ttk
 from subprocess import Popen, PIPE
 import os
 import json
 import time
+import psutil
 
 # variabili globali
 p = None
 m = None
 v = None
-pythonCommand = "python3"
+pythonCommand = "py"
+
+def is_python_program_running(program_name):
+    tasklist_output = subprocess.check_output(['tasklist']).decode('utf-8')
+    return any(program_name.lower() in line.lower() for line in tasklist_output.split('\n'))
+
 
 def setup_audio(fileName, parameterToChange, value):
     file_paths = {
@@ -31,7 +38,11 @@ def setup_audio(fileName, parameterToChange, value):
                     break
             file.writelines(old_configs)
 
-        
+def start_feedback_system():
+    global v
+    print("STARTING FEEDBACK SYSTEM")
+    v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
+    
 
 def start_video_action(is_online, is_configuration, crouch, hands, body_direction, configuration_time, path_to_video):
     # print(path_to_video)
@@ -61,10 +72,10 @@ def start_video_action(is_online, is_configuration, crouch, hands, body_directio
                 f.seek(0)
                 json.dump(configurationData, f, indent=4)
                 f.truncate()
-            m = Popen([pythonCommand, '../Mediapipe/video_analysis.py' , 'false', 'true'], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/video_analysis.py' , 'true', 'true'], stdin=PIPE)
         else:
             print("Configuration time is empty, using default configuration time")
-            m = Popen([pythonCommand, '../Mediapipe/video_analysis.py' , 'false', 'true'], stdin=PIPE)
+            m = Popen([pythonCommand, '../Mediapipe/video_analysis.py' , 'true', 'true'], stdin=PIPE)
     elif is_configuration:
         print("ONLINE ANALYSIS - CONFIGURATION")
             
@@ -94,7 +105,6 @@ def start_video_action(is_online, is_configuration, crouch, hands, body_directio
         else:
             # errore nessuna opzione selezionata
             print("Nessuna opzione selezionata")
-        
 
 def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibration, userCalibration, userCalibrationFile):
     global p
@@ -102,8 +112,7 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
     if not is_online:
         print("OFFLINE ANALYSIS")
         setup_audio('global.pipeline-config', 'audio:live:mic', 'false')
-                   
-          
+
         if not audioLive:
             setup_audio('global.pipeline-config', 'audio:live', 'false')
             if audio_path != "":
@@ -112,6 +121,8 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
                     
                     setup_audio('audio_input.pipeline-config', 'audio:file', audio_path)
                 setup_audio('audio_features.pipeline-config', 'output:file:save', 'true')
+            setup_audio('audio_features.pipeline-config', 'output:feedback:visual', 'false')
+            setup_audio('audio_features.pipeline-config', 'output:feedback:aptic', 'false')
             print("Using audio file: ", audio_path)
         if vadCalibration:
             print("VAD Calibration")
@@ -124,7 +135,7 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
             print("Audio Analysis")
             setup_audio('audio_features.pipeline-config', 'output:file:save', 'true') 
             setup_audio('audio_features.pipeline-config', 'output:file:new', 'true') 
-            v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
+            # v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
             p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
         
     if is_online:
@@ -146,14 +157,16 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
             setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user', 'true')
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'true')
-            v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
+            # v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
             p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
         elif userCalibration == 0 and not vadCalibration:
             print("Audio Analysis")
             setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
-            v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
+            setup_audio('audio_features.pipeline-config', 'output:feedback:visual', 'true')
+            setup_audio('audio_features.pipeline-config', 'output:feedback:aptic', 'true')
+            # v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
             p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
             
             
@@ -163,7 +176,7 @@ try:
     os.chdir('./bin/')
     root = tk.Tk()
     root.title("HUMAN-AGENT INTERACTION SYSTEM - GUI")
-    root.geometry("1000x1000")
+    # root.geometry("1000x1000")
 
     # Inserisci immagine logo
     logo = tk.PhotoImage(file="../HAI_logo.png")
@@ -171,6 +184,16 @@ try:
     logo = logo.subsample(2, 2)
     logo_label = tk.Label(root, image=logo)
     logo_label.pack(pady=10)
+    
+    top_separator = ttk.Separator(root, orient='horizontal')
+    top_separator.pack(fill='x', padx=10, pady=(0, 10))
+    subtitle_label = tk.Label(root, text="FEEDBACK SYSTEM", font=("Helvetica", 14))
+    subtitle_label.pack(pady=10)
+    start_feedback_system_button = tk.Button(root, text="Start Feedback System", font=("Helvetica", 12), command=lambda: start_feedback_system())
+    start_feedback_system_button.pack( pady=5)
+    
+    # start_video_button = tk.Button(left_frame, text="Start Video Analysis", command=lambda: start_video_action(False, False, None, None, None, None, video_entry.get()), font=("Helvetica", 12))
+
 
     # Sottotitolo "OFFLINE ANALYSIS"
     separator = ttk.Separator(root, orient='horizontal')

@@ -6,6 +6,8 @@ def getOptions(opts,vars):
     opts['features'] = ['loudness', 'loudness-d', 'pitch', 'pitch-d', 'energy', 'jitter', 'shimmer', 'alpha-ratio', 'hammarberg-index', 'spectral-flux', 'spectral-slope']
     opts['host'] = '127.0.0.1'  # The server's hostname or IP address
     opts['port'] = 4444      # The port used by the server
+    opts['visual_feedback'] = True
+    opts['aptic_feedback'] = True
 
 def consume_enter(sins, board, opts, vars):
     '''
@@ -22,6 +24,10 @@ def consume_enter(sins, board, opts, vars):
     if vars['client_socket'] is None:
         print("Error starting the socket")
     else:
+        if opts['visual_feedback']:
+            sh.send_data(vars['client_socket'], opts['host'], opts['port'], f"{sh.SSI_BASE}:{sh.START_BASE}:AUDIO_VISUAL")
+        if opts['aptic_feedback']:
+            sh.send_data(vars['client_socket'], opts['host'], opts['port'], f"{sh.SSI_BASE}:{sh.START_BASE}:AUDIO_APTIC")
         print("Socket started")
 
 def consume(info, sin, board, opts, vars):
@@ -51,4 +57,6 @@ def consume_flush(sins, board, opts, vars):
         vars (dictionary<string,any>): internal variables of the component
     '''
     if vars['client_socket'] is not None:
+        sh.send_data(vars['client_socket'], opts['host'], opts['port'], f"{sh.SSI_BASE}:{sh.STOP_BASE}:AUDIO_VISUAL")
+        sh.send_data(vars['client_socket'], opts['host'], opts['port'], f"{sh.SSI_BASE}:{sh.STOP_BASE}:AUDIO_APTIC")
         sh.close_socket(vars['client_socket'], opts['host'], opts['port'])
