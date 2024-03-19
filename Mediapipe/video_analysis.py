@@ -70,7 +70,7 @@ def execute_feedback(client_socket, message, LAST_MESSAGE, value):
                 "value": None
             }
         }) + "\n")
-        print("Message sent to the arduino, hands not visible")
+        # print("Message sent to the arduino, hands not visible")
         LAST_MESSAGE[0] = 1
     if message == "HANDS_VISIBILITY" and LAST_MESSAGE[0] == 1:
         send_data_network(client_socket, json.dumps({
@@ -79,26 +79,26 @@ def execute_feedback(client_socket, message, LAST_MESSAGE, value):
                 "value": None
             }
         }) + "\n")
-        print("Message sent to the arduino, hands visible")
+        # print("Message sent to the arduino, hands visible")
         LAST_MESSAGE[0] = 0
 
     if message == "HANDS_TOUCHING" and LAST_MESSAGE[1] == 0:
         send_data_network(client_socket, json.dumps({
-            "hands_touching": {
+            "hands_distance": {
                 "message": message,
                 "value": None
             }
         }) + "\n")
-        print("Message sent to the arduino, hands touching")
+        # print("Message sent to the arduino, hands touching")
         LAST_MESSAGE[1] = 1
     if message == "HANDS_NOT_TOUCHING" and LAST_MESSAGE[1] == 1:
         send_data_network(client_socket, json.dumps({
-            "hands_touching": {
+            "hands_distance": {
                 "message": message,
                 "value": None
             }
         }) + "\n")
-        print("Message sent to the arduino, hands not touching")
+        # print("Message sent to the arduino, hands not touching")
         LAST_MESSAGE[1] = 0
 
     if message == "BAD_BODY_DIRECTION" and LAST_MESSAGE[2] == 0:
@@ -109,7 +109,7 @@ def execute_feedback(client_socket, message, LAST_MESSAGE, value):
                     "value": value
                 }
             }) + "\n")
-            print("Message sent to the arduino, body right")
+            # print("Message sent to the arduino, body right")
         elif value == "Body Left":
             send_data_network(client_socket, json.dumps({
                 "body_direction": {
@@ -117,7 +117,7 @@ def execute_feedback(client_socket, message, LAST_MESSAGE, value):
                     "value": value
                 }
             }) + "\n")
-            print("Message sent to the arduino, body left")
+            # print("Message sent to the arduino, body left")
         LAST_MESSAGE[2] = 1
     if message == "GOOD_BODY_DIRECTION" and LAST_MESSAGE[2] == 1:
         send_data_network(client_socket, json.dumps({
@@ -126,7 +126,7 @@ def execute_feedback(client_socket, message, LAST_MESSAGE, value):
                 "value": None
             }
         }) + "\n")
-        print("Message sent to the arduino, body forward")
+        # print("Message sent to the arduino, body forward")
         LAST_MESSAGE[2] = 0
 
     if message == "CROUCH" and LAST_MESSAGE[3] == 0:
@@ -136,7 +136,7 @@ def execute_feedback(client_socket, message, LAST_MESSAGE, value):
                 "value": None
             }
         }) + "\n")
-        print("Message sent to the arduino, crouch")
+        # print("Message sent to the arduino, crouch")
         LAST_MESSAGE[3] = 1
     if message == "NOT_CROUCH" and LAST_MESSAGE[3] == 1:
         send_data_network(client_socket, json.dumps({
@@ -145,7 +145,7 @@ def execute_feedback(client_socket, message, LAST_MESSAGE, value):
                 "value": None
             }
         }) + "\n")
-        print("Message sent to the arduino, not crouch")
+        # print("Message sent to the arduino, not crouch")
         LAST_MESSAGE[3] = 0
 
     if message == "BAD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 0:
@@ -155,7 +155,7 @@ def execute_feedback(client_socket, message, LAST_MESSAGE, value):
                 "value": value
             }
         }) + "\n")
-        print("Message sent to the arduino, head not forward")
+        # print("Message sent to the arduino, head not forward")
         LAST_MESSAGE[4] = 1
     if message == "GOOD_HEAD_DIRECTION" and LAST_MESSAGE[4] == 1:
         send_data_network(client_socket, json.dumps({
@@ -164,7 +164,7 @@ def execute_feedback(client_socket, message, LAST_MESSAGE, value):
                 "value": None
             }
         }) + "\n")
-        print("Message sent to the arduino, head forward")
+        # print("Message sent to the arduino, head forward")
         LAST_MESSAGE[4] = 0
             
     return LAST_MESSAGE
