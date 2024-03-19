@@ -1,10 +1,10 @@
 // Nodemcu v3 HUZZAH ESP8266 pinout
 #define motorpin_wl 5    // D1
 #define motorpin_wr 4    // D2
-#define motorpin_bl 0    // D3
-#define motorpin_br 2    // D4
-#define peltier_neck 14  // D5
-#define peltier_chest 12 // D6
+#define motorpin_bl 2    // D4
+#define motorpin_br 14    // D5
+#define peltier_neck 12  // D6
+#define peltier_chest 13 // D7
 
 // DATA DEFINITIONs
 
