@@ -67,8 +67,7 @@ class SerialFeature:
             self.values.pop(0)
     
     def send_update(self, code, reference, pattern, min_intensity, max_intensity, pace):
-        #seh.send_data(f"<{code},{reference},{pattern},{min_intensity},{max_intensity},{pace}>")
-        print(f"<{code},{reference},{pattern},{min_intensity},{max_intensity},{pace}>")
+        seh.send_data(f"<{code},{reference},{pattern},{min_intensity},{max_intensity},{pace}>")
         self.actual_pattern = pattern
         self.actual_min_intensity = min_intensity
         self.actual_max_intensity = max_intensity
@@ -285,7 +284,7 @@ if __name__ == "__main__":
                 if feedback_audio["visual"] and key in lines_plot:
                     lines_plot[key].update_plot(json_data[key][0])
                 
-                if True and ser is not None:
+                if ser is not None:
                     if feedback_audio["aptic"] and key == "loudness":
                         serial_features[key].add_data(json_data[key][0])
                         if len(serial_features[key].values) == serial_features[key].max_values:
