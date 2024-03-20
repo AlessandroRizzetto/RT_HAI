@@ -1,3 +1,5 @@
+#0.8898800601115412
+
 import json
 import keyboard
 import pandas as pd
@@ -53,11 +55,12 @@ class ArrowPlotInformation(PlotInformation):
         plt.draw()
 
 class SerialFeature:
-    def __init__(self, max_values) -> None:
+    def __init__(self, max_values, ser=None) -> None:
         self.actual_pattern = 0
         self.actual_min_intensity = 0
         self.actual_max_intensity = 0
         self.actual_pace = 0
+        self.ser = ser
         self.max_values = max_values
         self.values = []
 
@@ -67,21 +70,21 @@ class SerialFeature:
             self.values.pop(0)
     
     def send_update(self, code, reference, pattern, min_intensity, max_intensity, pace):
-        seh.send_data(f"<{code},{reference},{pattern},{min_intensity},{max_intensity},{pace}>")
+        seh.send_data(self.ser, f"<{code},{reference},{pattern},{min_intensity},{max_intensity},{pace}>")
         self.actual_pattern = pattern
         self.actual_min_intensity = min_intensity
         self.actual_max_intensity = max_intensity
         self.actual_pace = pace
 
 class SerialVideoFeature(SerialFeature):
-    def __init__(self, max_values) -> None:
-        super().__init__(max_values)
+    def __init__(self, max_values, ser=None) -> None:
+        super().__init__(max_values, ser)
         
 
     def convert_and_send_update(self, new_message, new_value = None):
         correct_update = False
         if new_message == "HANDS_NOT_VISIBILITY":
-            self.send_update("v", 4, 1, 30, 60, 10) # sinusoide
+            self.send_update("v", 4, 1, 30, 100, 50) # sinusoide
             correct_update = True
             print("Message sent to the arduino, hands not visible")
         if new_message == "HANDS_VISIBILITY":
@@ -112,21 +115,21 @@ class SerialVideoFeature(SerialFeature):
             correct_update = True
             print("Message sent to the arduino, body forward")
 
-        if new_message == "CROUCH":
-            self.send_update("v", 5, 1, 20, 40, 0)
-            correct_update = True
-            print("Message sent to the arduino, crouch")
-        if new_message == "NOT_CROUCH":
-            self.send_update("v", 5, 0, 0, 0, 0)
-            correct_update = True
-            print("Message sent to the arduino, not crouch")
+        # if new_message == "CROUCH":
+        #     self.send_update("v", 5, 1, 20, 40, 0)
+        #     correct_update = True
+        #     print("Message sent to the arduino, crouch")
+        # if new_message == "NOT_CROUCH":
+        #     self.send_update("v", 5, 0, 0, 0, 0)
+        #     correct_update = True
+        #     print("Message sent to the arduino, not crouch")
 
         if new_message == "BAD_HEAD_DIRECTION":
-            self.send_update("h", 0, 0, 40, 40, 5)
+            self.send_update("h", 0, 0, 10, 10, 5)
             correct_update = True
             print("Message sent to the arduino, head not forward")
         if new_message == "GOOD_HEAD_DIRECTION":
-            self.send_update("h", 0, 0, 0, 0, 5)
+            self.send_update("h", 0, 0, 0, 0, 10)
             correct_update = True
             print("Message sent to the arduino, head forward")
         
@@ -254,21 +257,31 @@ if __name__ == "__main__":
             print("Activating audio aptic feedback")
             if ser is None:
                 ser = seh.connect_serial('COM5', 9600)
+                for key in serial_features:
+                    serial_features[key].ser = ser
             feedback_audio["aptic"] = True
         elif data == f"{soh.SSI_BASE}:{soh.STOP_BASE}:AUDIO_APTIC\0":
             print("Stopping audio aptic feedback")
             if ser is not None:
                 seh.close_serial(ser)
+                ser = None
+                for key in serial_features:
+                    serial_features[key].ser = None
             feedback_audio["visual"] = False
         elif data == f"{soh.SSI_BASE}:{soh.START_BASE}:VIDEO_APTIC\0":
             print("Activating video aptic feedback")
             if ser is None:
                 ser = seh.connect_serial('COM5', 9600)
+                for key in video_features:
+                    video_features[key].ser = ser
             feedback_video["aptic"] = True
         elif data == f"{soh.SSI_BASE}:{soh.STOP_BASE}:VIDEO_APTIC\0":
             print("Stopping video aptic feedback")
             if ser is not None:
                 seh.close_serial(ser)
+                ser = None
+                for key in video_features:
+                    video_features[key].ser = None
             feedback_video["visual"] = False
         else:
             try:
@@ -287,13 +300,15 @@ if __name__ == "__main__":
                 if ser is not None:
                     if feedback_audio["aptic"] and key == "loudness":
                         serial_features[key].add_data(json_data[key][0])
+                        print(len(serial_features[key].values), serial_features[key].max_values)
+                        print(np.mean(serial_features[key].values),neutral_features["loudness"],np.mean(serial_features[key].values) - neutral_features["loudness"])
                         if len(serial_features[key].values) == serial_features[key].max_values:
                             difference = np.mean(serial_features[key].values) - neutral_features["loudness"]
                             if serial_features[key].actual_max_intensity == 0 and difference > 0.1:
-                                serial_features[key].send_update(0, 30, 30, 5)
+                                serial_features[key].send_update("h", 1, 0, 30, 30, 10)
                                 print("Message sent to the arduino, level of voice too loud")
                             elif serial_features[key].actual_max_intensity > 0 and difference <= 0.1:
-                                serial_features[key].send_update(0, 0, 0, 5)
+                                serial_features[key].send_update("h", 1, 0, 0, 0, 10)
                                 print("Message sent to the arduino, level of voice correct")
                         
                     if feedback_video["aptic"] and key in video_features:
@@ -302,6 +317,6 @@ if __name__ == "__main__":
                         video_features[key].convert_and_send_update(new_message, new_value)
                         
                 if feedback_audio["visual"]:
-                    plt.pause(0.01)
+                    plt.pause(0.1)
     
     print("Feedback Execution stopped")

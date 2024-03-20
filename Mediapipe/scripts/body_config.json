@@ -1,8 +1,1 @@
-{
-  "video_path": "../Videos/VideoProva_short.mp4",
-  "hands_distance": 0.20276283297582767,
-  "yTorso_proportion": 0.8898800601115412,
-  "bounding_area_proportion": 1.0040341109485051,
-  "body_y": 10,
-  "configuration_time": 5.0
-}
+{"video_path": "../Videos/VideoProva_short.mp4", "hands_distance": 0.4247987352410077, "yTorso_proportion": 1.8, "bounding_area_proportion": 1.0040341109485051, "body_y": 10, "configuration_time": 5.0}

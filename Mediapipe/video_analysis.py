@@ -303,13 +303,16 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
             text = "Looking Forward"
         if body_y < - configData["body_y"]:
             body_text = "Body Right"
-            LAST_MESSAGE = execute_feedback(client_socket, "BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
+            if ssi_is_connected:
+                LAST_MESSAGE = execute_feedback(client_socket, "BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Right")
         elif body_y > configData["body_y"]:
             body_text = "Body Left"
-            LAST_MESSAGE = execute_feedback(client_socket, "BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
+            if ssi_is_connected:
+                LAST_MESSAGE = execute_feedback(client_socket, "BAD_BODY_DIRECTION", LAST_MESSAGE, "Body Left")
         else:
             body_text = "Body Forward"
-            LAST_MESSAGE = execute_feedback(client_socket, "GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
+            if ssi_is_connected:
+                LAST_MESSAGE = execute_feedback(client_socket, "GOOD_BODY_DIRECTION", LAST_MESSAGE, 0)
         # if body_text != "Body Forward":
         #     print("Body direction: ", body_text)
 
@@ -323,10 +326,12 @@ def bodyAndFace_inclination(client_socket, results, face_2d, face_3d, LAST_MESSA
             # print("Most frequent head direction: ", most_frequent_head_direction)
             if most_frequent_head_direction == "Looking Forward":
                 # print("sent message to the arduino, good head direction")
-                LAST_MESSAGE = execute_feedback(client_socket, "GOOD_HEAD_DIRECTION", LAST_MESSAGE, 0)
+                if ssi_is_connected:
+                    LAST_MESSAGE = execute_feedback(client_socket, "GOOD_HEAD_DIRECTION", LAST_MESSAGE, 0)
             else:
                 # print("sent message to the arduino, bad head direction")
-                LAST_MESSAGE = execute_feedback(client_socket, "BAD_HEAD_DIRECTION", LAST_MESSAGE, most_frequent_head_direction)
+                if ssi_is_connected:
+                    LAST_MESSAGE = execute_feedback(client_socket, "BAD_HEAD_DIRECTION", LAST_MESSAGE, most_frequent_head_direction)
 
         # Display the nose and body direction
         nose_3d_projection, _ = cv2.projectPoints(nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
@@ -394,9 +399,11 @@ def crouch_detection(client_socket, dataTable, LAST_MESSAGE, user_body, triangle
         featuresTable[f'crouch'].append("Not crouched")
     # if the user is crouching, send a message to the arduino to turn on the vibration
     if abs(yTorso) < abs(standart_yTorso * yTorso_proportion) or abs(triangle_area) < abs(standard_bounding_triangle * bounding_area_proportion):
-        LAST_MESSAGE = execute_feedback(client_socket, "CROUCH", LAST_MESSAGE, 0)
+        if ssi_is_connected:
+            LAST_MESSAGE = execute_feedback(client_socket, "CROUCH", LAST_MESSAGE, 0)
     else:
-        LAST_MESSAGE = execute_feedback(client_socket, "NOT_CROUCH", LAST_MESSAGE, 0)
+        if ssi_is_connected:
+            LAST_MESSAGE = execute_feedback(client_socket, "NOT_CROUCH", LAST_MESSAGE, 0)
 
 def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, configData):
     # calculate the distance between the hands
@@ -404,12 +411,14 @@ def touching_hands(client_socket, dataTable, LAST_MESSAGE, featuresTable, config
     # print("hands_distance: ", hands_distance)
     hands_threshold = configData["hands_distance"] + 0.1
     if hands_distance < hands_threshold:
-        LAST_MESSAGE = execute_feedback(client_socket, "HANDS_TOUCHING", LAST_MESSAGE, 0)
+        if ssi_is_connected:
+            LAST_MESSAGE = execute_feedback(client_socket, "HANDS_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands touching")
         # print("Hands touching")
         # execute_feedback("HANDS_TOUCHING", LAST_MESSAGE, 0)
     else:
-        LAST_MESSAGE = execute_feedback(client_socket, "HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
+        if ssi_is_connected:
+            LAST_MESSAGE = execute_feedback(client_socket, "HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
         featuresTable[f'hands_distance'].append("Hands not touching")
         # print("Hands not touching")
         # execute_feedback("HANDS_NOT_TOUCHING", LAST_MESSAGE, 0)
@@ -423,11 +432,13 @@ def hands_visibility(client_socket, dataTable, LAST_MESSAGE, featuresTable, conf
         hands_are_visible = False
         featuresTable[f'hands_visibility'].append("Hands not visible")
         #print("Hands not visible")
-        LAST_MESSAGE = execute_feedback(client_socket, "HANDS_NOT_VISIBILITY", LAST_MESSAGE, 0)
+        if ssi_is_connected:
+            LAST_MESSAGE = execute_feedback(client_socket, "HANDS_NOT_VISIBILITY", LAST_MESSAGE, 0)
     else:
         hands_are_visible = True
         featuresTable[f'hands_visibility'].append("Hands visible")
-        LAST_MESSAGE = execute_feedback(client_socket, "HANDS_VISIBILITY", LAST_MESSAGE, 0)
+        if ssi_is_connected:
+            LAST_MESSAGE = execute_feedback(client_socket, "HANDS_VISIBILITY", LAST_MESSAGE, 0)
         #print("Hands visible")
     
     
@@ -508,7 +519,8 @@ def mediaPipe(client_socket, ssi_is_connected, configData, is_online, configurat
     featuresTable[f'hands_distance'] = []
     featuresTable[f'hands_visibility'] = []    
         
-    send_data_network(client_socket, "SSI:STRT:VIDEO_APTIC")
+    if ssi_is_connected:
+        send_data_network(client_socket, "SSI:STRT:VIDEO_APTIC")
         
     with open("landmarks.stream~", "a+") as f:
         with holistic as pose:
@@ -678,7 +690,8 @@ def mediaPipe(client_socket, ssi_is_connected, configData, is_online, configurat
     cap.release()
     cv2.destroyAllWindows()
 
-    send_data_network(client_socket, "SSI:STOP:VIDEO_APTIC")
+    if ssi_is_connected:
+        send_data_network(client_socket, "SSI:STOP:VIDEO_APTIC")
     
     # offline_overall_outcomes(client_socket, dataTable, LAST_MESSAGE, featuresTable, "dataTable.csv")
     manage_socket(HOST, PORT, ssi_is_connected, "stop")
