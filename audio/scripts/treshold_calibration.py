@@ -107,8 +107,9 @@ if __name__ == "__main__":
     # Set the window position
     mngr = plt.get_current_fig_manager()
     try:
-        mngr.window.wm_geometry("250x350+300+400")
+        mngr.window.wm_geometry("+300+400")
     except:
+        print("Window not moved")
         pass
 
     # Start the socket

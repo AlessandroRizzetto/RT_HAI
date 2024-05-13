@@ -13,6 +13,7 @@ def getOptions(opts, vars):
     
     opts['vad_tresh'] = 0.3
     opts['vad_calibration'] = False
+    vars['initial_vad_tresh'] = opts['vad_tresh']
 
     vars['event_vad'] = False
     vars['loaded'] = False
