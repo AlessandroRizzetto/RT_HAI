@@ -22,8 +22,8 @@ enum VibrationMode
 // Pattern to follow to reach the desired intensity/ies
 enum PatternMode
 {
-  LINEAR,
-  SINUSOIDAL,
+  LINEAR,     // Reach the desired level (average of min_intensity and max_intensity) and then stop
+  SINUSOIDAL, // Keep changing level from min_intensity to max_intensity and vice versa
 };
 
 // Device class to handle the devices
@@ -36,19 +36,22 @@ private:
   int max_intensity;
   int actualValue; // Power level fro 0 to 99%
   int valueToReach;
+  float powerMultiplier; // Multiplier to adapt different power sources or different devices characteristics
 
   int computePace(int diff, int defaultPace);
 
 public:
-  Device(PatternMode mode, int min_intensity, int max_intensity, int pace);
-  Device(PatternMode mode, int pace);
+  Device(PatternMode mode, float powerMultiplier, int min_intensity, int max_intensity, int pace);
+  Device(PatternMode mode, float powerMultiplier, int pace);
 
+  float getPowerMultiplier();
   int getPace();
   PatternMode getMode();
   int getMinIntensity();
   int getMaxIntensity();
   int getActualValue();
   int getValueToReach();
+  int getMultipliedValue();
   int getAnalogValue();
 
   void setPace(int pace);
@@ -64,44 +67,50 @@ public:
 // Serial Data parsing
 const byte numChars = 16;
 char receivedChars[numChars];
-char tempChars[numChars]; // temporary array for use when parsing
-// variables to hold the parsed data
-char code[2];
-int value = 0;
-PatternMode pattern = LINEAR;
-int min_intensity = 0;
-int max_intensity = 0;
-int pace = 0;
+char tempChars[numChars]; // Temporary array for use when parsing
+// Variables to hold the parsed data
+char code[2];                 // ["h","v"] Group of devices
+int value = 0;                // [0-1 for "h", 0-5 for "v"] Group-specific device(s)
+PatternMode pattern = LINEAR; // Type of progress to the desired intensity level
+int min_intensity = 0;        // [0-99] Min intensity level to reach
+int max_intensity = 0;        // [0-99] Max intensity level to reach
+int pace = 0;                 // [0-99] level progression per cycle
 boolean newData = false;
 
 // Peltier variables
 const int pCells = 2;
 const int pPace = 5;
-Device pHandlers[pCells] = {Device(LINEAR, pPace), Device(LINEAR, pPace)};
+Device pHandlers[pCells] = {Device(LINEAR, 1, pPace), Device(LINEAR, 1, pPace)}; // List of objects which keep track and controll Peltier devices
 
 // Vibration variables
 const int vMotors = 4;
 const int vPace = 5;
 VibrationMode vMode = NONE;
-Device vHandlers[vMotors] = {Device(LINEAR, vPace), Device(LINEAR, vPace), Device(LINEAR, vPace), Device(LINEAR, vPace)};
+Device vHandlers[vMotors] = {Device(LINEAR, 1, vPace), Device(LINEAR, 1, vPace), Device(LINEAR, 1, vPace), Device(LINEAR, 1, vPace)}; // List of objects which keep track and controll Vibration motors
 
-int devicesIndex[pCells + vMotors] = {-1, -1, -1, -1, -1, -1};
+int devicesIndex[pCells + vMotors] = {-1, -1, -1, -1, -1, -1}; // List of device indexes at which to change its level
 int count;
 
 // FUNCTIONS PROTOTYPES
 
 // Device class constructor
 
-Device::Device(PatternMode mode, int min_intensity, int max_intensity, int pace)
+Device::Device(PatternMode mode, float powerMultiplier, int min_intensity, int max_intensity, int pace)
 {
+  this->powerMultiplier = powerMultiplier;
   this->setDevice(mode, min_intensity, max_intensity);
   this->setPace(pace);
   this->actualValue = 0;
 }
 
-Device::Device(PatternMode mode, int pace) : Device(mode, 0, 0, pace) {}
+Device::Device(PatternMode mode, float powerMultiplier, int pace) : Device(mode, powerMultiplier, 0, 0, pace) {}
 
 // Device class getters
+
+float Device::getPowerMultiplier()
+{
+  return powerMultiplier;
+}
 
 int Device::getPace()
 {
@@ -133,9 +142,14 @@ int Device::getValueToReach()
   return valueToReach;
 }
 
+int Device::getMultipliedValue()
+{
+  return round(actualValue * powerMultiplier);
+}
+
 int Device::getAnalogValue()
 {
-  return map(actualValue, 0, 99, 0, 255);
+  return map(getMultipliedValue(), 0, 99, 0, 255);
 }
 
 // Device class setters
@@ -292,7 +306,7 @@ PatternMode toPatternMode(int mode)
   return actualMode;
 }
 
-// Read the serial data and store it in the receivedChars array
+// Read the serial data, remove "<" and ">" and store it in the receivedChars array
 void recvWithStartEndMarkers()
 {
 
@@ -336,11 +350,11 @@ void parseData() // Message format: <code,value,pattern,min_intensity,max_intens
 {
   char *strtokIndx; // This is used by strtok() as an index
 
-  strtokIndx = strtok(tempChars, ","); // Get the first part
-  strcpy(code, strtokIndx);            // Copy it to code
+  strtokIndx = strtok(tempChars, ",");
+  strcpy(code, strtokIndx);
 
-  strtokIndx = strtok(NULL, ","); // Get the index of the next part
-  value = atoi(strtokIndx);       // Convert this part to an integer
+  strtokIndx = strtok(NULL, ",");
+  value = atoi(strtokIndx);
 
   strtokIndx = strtok(NULL, ",");
   pattern = toPatternMode(atoi(strtokIndx));
@@ -398,6 +412,8 @@ void printPeltierState(int code)
   Serial.print(pHandlers[code].getMode());
   Serial.print(" Power=");
   Serial.print(pHandlers[code].getActualValue());
+  Serial.print(" MultipliedLevel=");
+  Serial.print(pHandlers[code].getMultipliedValue());
 
   if (pHandlers[code].getActualValue() != pHandlers[code].getValueToReach())
   {
@@ -418,6 +434,8 @@ void printVibrationState(int code)
   Serial.print(vHandlers[code].getMode());
   Serial.print(" Level=");
   Serial.print(vHandlers[code].getActualValue());
+  Serial.print(" MultipliedLevel=");
+  Serial.print(vHandlers[code].getMultipliedValue());
 
   if (vHandlers[code].getActualValue() != vHandlers[code].getValueToReach())
   {
