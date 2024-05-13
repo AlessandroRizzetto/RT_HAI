@@ -10,7 +10,14 @@ from matplotlib.widgets import Button
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 3333      # The port used by the server
 
-def check_trehshold(tresh):
+def check_init_tresh():
+    '''
+    Check if init_tresh is correct or not.
+
+    Returns:
+        boolean: init_tresh correct (True) or not (False)
+    '''
+
     if init_tresh < 0 or init_tresh > 1:
         print('Invalid treshold value. Please enter a value between 0 and 1.')
         return False
@@ -18,25 +25,33 @@ def check_trehshold(tresh):
 
 # The function to be called anytime a slider's value changes
 def update(val):
+    '''
+    Update the treshold slider value.
+    '''
+
     sh.send_data(client_socket, HOST, PORT, str(tresh_slider.val) + "\n")
     bar[0].set_height(tresh_slider.val)
     fig.canvas.draw_idle()
 
 def reset(event):
+    '''
+    Reset treshold slider value.
+    '''
+    
     tresh_slider.reset()
 
 if __name__ == "__main__":
     # Define initial parameters
     default = True
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1: # Use proposed base treshold
         try:
             init_tresh = float(sys.argv[1])
-            if check_trehshold(init_tresh):
+            if check_init_tresh():
                 default = False
         except ValueError:
             print('Invalid treshold value from command line')
 
-    if len(sys.argv) == 0 or default:
+    if len(sys.argv) == 0 or default: # Get base treshold from configs
         with open('../audio/pipes/vad_filter.pipeline-config', 'r') as file:
             old_configs = file.readlines()
             for line in old_configs:
@@ -44,12 +59,13 @@ if __name__ == "__main__":
                 if 'vad:tresh' == tmp_line[0]:
                     try:
                         init_tresh = float(tmp_line[1])
-                        if check_trehshold(init_tresh):
+                        if check_init_tresh():
                             default = False
                             break
                     except ValueError:
                         print('Invalid treshold value from config')
 
+    # In case both previous ways fail, use a defauld base treshold
     if default:
         init_tresh = 0.4
         print('Using default treshold:',init_tresh)

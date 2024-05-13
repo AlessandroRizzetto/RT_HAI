@@ -109,7 +109,7 @@ To connect devices to the system, we created prototype modular circuits, similar
 
 ![Electrical scheme of the circuits for vibration motor (left) and Peltier device (right).](/Arduino/electrical_scheme/Schematic_Research-Project_2024-03-13.png)
 
-As shown in Figure \ref{fig:devices_scheme}, it is mentioned that both circuits have to be connected to a PWM pin. We used the open-source electronics platform Arduino UNO Rev3, so the PWM pins used are 3,5,6 and 9 for the vibration motors and 10 and 11 for the Peltier devices.
+As shown in the previous figure, it is mentioned that both circuits have to be connected to a PWM pin. We used the open-source electronics platform Arduino UNO Rev3, so the PWM pins used are 3,5,6 and 9 for the vibration motors and 10 and 11 for the Peltier devices.
 
 Moreover, the VCC of the Peltier device's circuit is referred to a maximum, as it is related to the characteristic of the Peltier device used. For example, to perform our tests, we used a 6V - 4A battery and 12V - 4A battery.
 

@@ -19,19 +19,20 @@
 
 	<!-- socket receiver 
 	
-	Reads from a socket port and feeds the received signal into the
-	pipeline. Use this component to receive signals from external applications.
-	Make sure to adjust the options to fit the incoming signal.
+	Reads from a socket port and feeds the received signal into the pipeline.
+	Receive treshold changes
 	
 	-->
 	<object create="SocketEventReader" url="udp://localhost:3333" address="calibration@vad" />
 	<!---->
 
+	<!-- environment setup
+	
+	Import vad_filter and create a plot to see the original audio on the left and the VADed audio on the right.
+
+	-->
 	<include path=".\vad_filter.pipeline"/>
 
-	<consumer create="AudioPlayer:audio" option="..\options\aplayer">
-		<input pin="audio" frame="0.1s" />
-	</consumer>
 	<consumer create="SignalPainter:plot-audio" title="AUDIO" size="10" type="2">
 		<input pin="audio" frame="0.3s" />
 	</consumer>
@@ -59,4 +60,5 @@
 			<area pos="400,0,400,300">plot-vad</area>
 		</object>
 	</gate>
+	<!---->
 </pipeline>

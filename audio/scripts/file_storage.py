@@ -4,14 +4,22 @@ import numpy as np
 from scipy.signal import savgol_filter
 
 def getOptions(opts,vars):
-    opts['new_file'] = 'false'
-    opts['file_path'] = '../data/dataTable.csv'
-    opts['features'] = ['loudness', 'loudness-d', 'pitch', 'pitch-d', 'energy', 'jitter', 'shimmer', 'alpha-ratio', 'hammarberg-index', 'spectral-flux', 'spectral-slope']
-    opts['user_class'] = 'CLASSE'
-    opts['mean'] = 'false'
-    opts['polyorder'] = 2
+    '''
+    SSI function called to get the options of the component and initialize the variables.
 
-    vars['data'] = {opts['features'][i]: np.array([]) for i in range(len(opts['features']))}
+    Args:
+        opts (dictionary<string,any>): options of the component
+        vars (dictionary<string,any>): internal variables of the component
+    '''
+
+    opts['new_file'] = 'false' # Create new storage file
+    opts['file_path'] = '../data/dataTable.csv' # File path
+    opts['features'] = ['loudness', 'loudness-d', 'pitch', 'pitch-d', 'energy', 'jitter', 'shimmer', 'alpha-ratio', 'hammarberg-index', 'spectral-flux', 'spectral-slope'] # Features to save
+    opts['user_class'] = 'CLASSE' # User ID
+    opts['mean'] = 'false' # Compute mean of given values
+    opts['polyorder'] = 2 # Savgol filter polyorder
+
+    vars['data'] = {opts['features'][i]: np.array([]) for i in range(len(opts['features']))} # Features data
 
 def consume_enter(sins, board, opts, vars):
     '''
@@ -24,6 +32,7 @@ def consume_enter(sins, board, opts, vars):
         opts (dictionary<string,any>): options of the component
         vars (dictionary<string,any>): internal variables of the component
     '''
+
     new_file = os.path.exists(opts['file_path']) and opts['new_file'] == 'true'
     try:
         vars['f'] = open(opts['file_path'], 'w') if new_file else open(opts['file_path'], 'a')
@@ -45,6 +54,7 @@ def consume(info, sin, board, opts, vars):
     SSI function called when new samples are received.
     Append the new samples to the data dictionary and save them on file if specified.
     '''
+
     to_write = [opts['user_class']]
     for i, x in enumerate(sin):
         npin = np.array(x)
@@ -84,6 +94,7 @@ def consume_flush(sins, board, opts, vars):
         opts (dictionary<string,any>): options of the component
         vars (dictionary<string,any>): internal variables of the component
     '''
+    
     to_write = [opts['user_class']]
     for x in vars['data']:
         if vars['data'][x].size > 0:
