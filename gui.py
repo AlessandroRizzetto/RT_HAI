@@ -122,12 +122,12 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
                     setup_audio('audio_input.pipeline-config', 'audio:file', audio_path)
                 setup_audio('audio_features.pipeline-config', 'output:file:save', 'true')
             setup_audio('audio_features.pipeline-config', 'output:feedback:visual', 'false')
-            setup_audio('audio_features.pipeline-config', 'output:feedback:aptic', 'false')
+            setup_audio('audio_features.pipeline-config', 'output:feedback:haptic', 'false')
             print("Using audio file: ", audio_path)
         if vadCalibration:
             print("VAD Calibration")
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
-            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'true')
+            setup_audio('vad_filter.pipeline-config', 'calibration:vad:tresh', 'true')
             p = Popen([pythonCommand, '../audio/scripts/treshold_calibration.py'])
             v = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/vad_calibration.pipeline'])
         elif not vadCalibration:
@@ -149,24 +149,24 @@ def start_audio_action(audio_path, is_online, audioLive, audioLiveMic, vadCalibr
             print("VAD Calibration")
             setup_audio('audio_features.pipeline-config', 'calibration:user', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
-            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'true')
+            setup_audio('vad_filter.pipeline-config', 'calibration:vad:tresh', 'true')
             p = Popen([pythonCommand, '../audio/scripts/treshold_calibration.py'])
             v = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/vad_calibration.pipeline'])
         elif userCalibration == 1 and not vadCalibration:
             print("USER Calibration and Audio Analysis")
-            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'false')
+            setup_audio('vad_filter.pipeline-config', 'calibration:vad:tresh', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user', 'true')
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'true')
-            # v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
+            v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
             p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
         elif userCalibration == 0 and not vadCalibration:
             print("Audio Analysis")
-            setup_audio('vad_filter.pipeline-config', 'vad:tresh:calibration', 'false')
+            setup_audio('vad_filter.pipeline-config', 'calibration:vad:tresh', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user', 'false')
             setup_audio('audio_features.pipeline-config', 'calibration:user:file:new', 'false')
             setup_audio('audio_features.pipeline-config', 'output:feedback:visual', 'true')
-            setup_audio('audio_features.pipeline-config', 'output:feedback:aptic', 'true')
-            # v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
+            setup_audio('audio_features.pipeline-config', 'output:feedback:haptic', 'true')
+            v = Popen([pythonCommand, '../audio/scripts/feedback_execution.py'])
             p = Popen(['xmlpipe.exe', '-config', 'global', '../audio/pipes/audio_features.pipeline'])
             
             
@@ -178,12 +178,12 @@ try:
     root.title("HUMAN-AGENT INTERACTION SYSTEM - GUI")
     # root.geometry("1000x1000")
 
-    # Inserisci immagine logo
+    '''# Inserisci immagine logo
     logo = tk.PhotoImage(file="../HAI_logo.png")
     # resize the image
     logo = logo.subsample(2, 2)
     logo_label = tk.Label(root, image=logo)
-    logo_label.pack(pady=10)
+    logo_label.pack(pady=10)'''
     
     top_separator = ttk.Separator(root, orient='horizontal')
     top_separator.pack(fill='x', padx=10, pady=(0, 10))

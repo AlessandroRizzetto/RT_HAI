@@ -180,7 +180,7 @@
 		</gate>
 	</gate>
 	<gate open="$(output:visualization:python)">
-		<consumer create="PythonConsumer:features_sender" script="features_sender" syspath="..\scripts" optsstr="visual_feedback=$(output:feedback:visual);aptic_feedback=$(output:feedback:aptic)">
+		<consumer create="PythonConsumer:features_sender" script="features_sender" syspath="..\scripts" optsstr="visual_feedback=$(output:feedback:visual);aptic_feedback=$(output:feedback:haptic)">
 			<input pin="loudness" frame="1s" delta="0.5s" />
 			<xinput size="9">
 				<input pin="loudness-d" />

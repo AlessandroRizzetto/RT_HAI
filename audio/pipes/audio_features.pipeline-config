@@ -28,8 +28,8 @@ output:visualization:python = true
 # $(boolean) if python handle the visualization, use visual feedback
 output:feedback:visual = true
 
-# $(boolean) if python handle the visualization, use aptic feedback
-output:feedback:aptic = true
+# $(boolean) if python handle the visualization, use haptic feedback
+output:feedback:haptic = true
 
 # $(boolean) if the visualization is not demanded to python, show all output features if true
 output:visualization:debug = false
