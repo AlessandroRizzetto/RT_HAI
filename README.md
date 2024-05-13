@@ -36,7 +36,7 @@ The following software components were integral to the project:
 
     <img src="https://camo.githubusercontent.com/54e5f06106306c59e67acc44c61b2d3087cc0a6ee7004e702deb1b3eb396e571/68747470733a2f2f6d65646961706970652e6465762f696d616765732f6d6f62696c652f706f73655f747261636b696e675f66756c6c5f626f64795f6c616e646d61726b732e706e67" width="500" height="300" />
 
-- **OpenSmile:**
+- **openSMILE:**
   - OpenSmile is utilized for processing audio data, extracting features from the user's speech, contributing to the analysis of emotional content and vocal nuances.
 
 ## Installation
@@ -81,7 +81,7 @@ After that the user can choose which functionality run among the following.
 1. VIDEO (Start: press `Start Video Analysis`. End: automatic): perform an analysis of the video specified in the `Path to video` field. Otherwise it will perform an analysis on a default video.
 
 2. AUDIO (Start: press `Start Audio Analysis`. End: click on the terminal and press `Enter` on keyboard): perform an audio analysis similarly to offline video analysis.
-   - VAD configuration (Start: press `Start VAD configuration`, `1` on the terminal when asked. End: close threshold window, click on the terminal and press `Enter` on keyboard): beginning this procedure it is possible to set the threshold for VAD. Namely, the selected audio is played, the new window on the left show the original audio, the right one the VADed audio and, through the slider in the central window, it is possible to change the the threshold, seeing the results on the right window.
+   - VAD configuration (Start: press `Start VAD configuration`, insert `1` on the terminal when asked and click `Enter` on keyboard. End: close threshold window, click on the terminal and press `Enter` on keyboard): beginning this procedure it is possible to set the threshold for VAD. Namely, the selected audio is played, the new window on the left show the original audio, the right one the VADed audio and, through the slider in the central window, it is possible to change the the threshold, seeing the results on the right window.
 
 ### ONLINE ANALYSIS
 
@@ -120,7 +120,7 @@ In order to map features into feedbacks, we created a little protocol to control
 - `code` [`h, v`]: it indicates the choice of control the Peltier cells `h` or the vibration motors (`v`).
 - `value` [`0 - 5`]: it specifies which components control among Peltier devices (`<h,0,` first device and `<h,1` and second device) vibrations motors (`<v,0` first motor, ..., `<v,4` motors 0 and 1 and `<v,5` motors 2 and 3).
 - `pattern` [`0, 1`]: it indicates how the components will reach the following levels:
-  - `Linear` [`0`]: the proper component reachs the level $\Large\frac{max_inensity + min_intensity}{2}$ and then stop.
+  - `Linear` [`0`]: the proper component reachs the level $\Large\frac{max\_inensity + min\_intensity}{2}$ and then stop.
   - `Sinusoidal` [`1`]: the proper component continue to go back and forth between values `max_inensity` and `min_intensity`.
 - `min_intensity` and `max_intensity` [`0 - 99`]: this value represents the possible intensities that can be requested from the devices connected to the Arduino.
 - `pace` [`0 - 99`]: specifies the interval that is passed through each cycle of the Arduino in order to reach the levels indicated by `min_intensity` and `max_intensity`. If the value is `0` or greater than the difference between the actual level and the level to reach, the latter will be reached in one cycle and, in case of `sinusoidal` pattern, every cycle the level will be respectively `min_intensity` and `max_intensity` without transictions.
