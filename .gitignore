@@ -2,6 +2,10 @@
 *.csv
 !/bin/7za.exe
 !/bin/wget.exe
+!/bin/fix_iso639.py
+!/bin/iso639-0.1.4.tar.gz
+!/bin/iso-639-0.4.5.tar.gz
+!/bin/opensmile-2.5.0-py3-none-win_amd64.whl
 **/ssi_last.err
 
 **/__pycache__
