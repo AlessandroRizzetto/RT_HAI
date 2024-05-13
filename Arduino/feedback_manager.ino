@@ -452,6 +452,14 @@ void setup()
 {
   Serial.begin(9600);
 
+  pinMode(motorpin_wl, OUTPUT);
+  pinMode(motorpin_wr, OUTPUT);
+  pinMode(motorpin_bl, OUTPUT);
+  pinMode(motorpin_br, OUTPUT);
+
+  pinMode(peltier_neck, OUTPUT);
+  pinMode(peltier_chest, OUTPUT);
+
   // Peltier setup
   for (int i = 0; i < pCells; i++)
   {
