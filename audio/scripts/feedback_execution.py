@@ -30,10 +30,12 @@ class LinePlotInformation(PlotInformation):
             self.y.pop()
     
         # update the correspodent plot in axs
+        tmp_title = axs[self.plot_position[0]][self.plot_position[1]].get_title()
         axs[self.plot_position[0]][self.plot_position[1]].clear()
         axs[self.plot_position[0]][self.plot_position[1]].plot(self.x, self.y)
         axs[self.plot_position[0]][self.plot_position[1]].relim()
         axs[self.plot_position[0]][self.plot_position[1]].autoscale_view(True,True,True)
+        axs[self.plot_position[0]][self.plot_position[1]].set_title(tmp_title)
         '''ylim = axs[self.plot_position[0]][self.plot_position[1]].get_ylim()
         if new_value != ylim[0] and new_value != ylim[1]:
             axs[self.plot_position[0]][self.plot_position[1]].set_ylim(ymin=min(new_value,ylim[0]), ymax=max(new_value,ylim[1]))
@@ -50,8 +52,10 @@ class ArrowPlotInformation(PlotInformation):
 
         direction = 1 if new_value > self.value else -1
         self.value = new_value
+        tmp_title = axs[self.plot_position[0]][self.plot_position[1]].get_title()
         axs[self.plot_position[0]][self.plot_position[1]].clear()
         axs[self.plot_position[0]][self.plot_position[1]].arrow(0.25, 0, 0, direction*1, width=0.025, head_width=0.05, head_length=0.85, fc='k', ec='k')
+        axs[self.plot_position[0]][self.plot_position[1]].set_title(tmp_title)
         plt.draw()
 
 class SerialFeature:
@@ -156,15 +160,17 @@ def get_user_neutral_features():
 def setup_plots():
     global arrows_plot, lines_plot
 
-    fig, axs = plt.subplots(2, 2, sharex='col')
+    fig, axs = plt.subplots(2, 2, sharex='col', figsize=(7, 6))
     
-    axs[0, 0].set_title(arrows_plot["loudness"].title)
     axs[0, 0].set_xlim(0, 0.5)
+    axs[0, 0].xaxis.set_ticks([])
     axs[0, 0].set_autoscale_on(True)
-    axs[1, 0].set_title(arrows_plot["pitch"].title)
     axs[1, 0].set_xlim(0, 0.5)
+    axs[0, 0].xaxis.set_ticks([])
     axs[1, 0].set_autoscale_on(True)
     
+    axs[0, 0].set_title(arrows_plot["loudness"].title)
+    axs[1, 0].set_title(arrows_plot["pitch"].title)
     axs[0, 1].set_title(lines_plot["loudness-d"].title)
     axs[1, 1].set_title(lines_plot["pitch-d"].title)
 

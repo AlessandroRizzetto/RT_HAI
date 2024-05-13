@@ -4,8 +4,8 @@ from tkinter import messagebox, ttk
 from subprocess import Popen, PIPE
 import os
 import json
-import time
-import psutil
+#import time
+#import psutil
 
 # variabili globali
 p = None

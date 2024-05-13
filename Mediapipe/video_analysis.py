@@ -9,10 +9,9 @@ from scipy.signal import savgol_filter
 from numpy.linalg import norm
 import time
 import socket
-import socket
 import sys
 import csv
-import serial
+#import serial
 import pandas as pd
 import keyboard
 
