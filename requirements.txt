@@ -1,6 +1,6 @@
 keyboard == 0.13.5
 pandas == 2.2.2
-serial == 0.0.97
+pyserial == 0.0.97
 matplotlib == 3.8.4
 opencv-python == 4.9.0.80
 scipy == 1.13.0
