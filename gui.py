@@ -178,12 +178,12 @@ try:
     root.title("HUMAN-AGENT INTERACTION SYSTEM - GUI")
     # root.geometry("1000x1000")
 
-    '''# Inserisci immagine logo
-    logo = tk.PhotoImage(file="../HAI_logo.png")
+    # Inserisci immagine logo
+    logo = tk.PhotoImage(file="../media/HAI_logo.png")
     # resize the image
     logo = logo.subsample(2, 2)
     logo_label = tk.Label(root, image=logo)
-    logo_label.pack(pady=10)'''
+    logo_label.pack(pady=10)
     
     top_separator = ttk.Separator(root, orient='horizontal')
     top_separator.pack(fill='x', padx=10, pady=(0, 10))
