@@ -53,12 +53,12 @@
 		<input pin="audio" frame="9"/>
 		<output pin="audio-down"/>
 	</transformer>
-	<transformer create="OSPitchChain" option="pitch">
+	<transformer create="OSPitchChain" option="options\pitch">
 		<input pin="audio-down" frame="0.01s" delta="0.02s"/>
 		<output pin="audio-pitch"/>
 	</transformer>
 	<gate open="$(audio:mffc)">
-		<transformer create="OSMfccChain" option="mfcc">
+		<transformer create="OSMfccChain" option="options\mfcc">
 			<input pin="audio-down" frame="0.01s" delta="0.02s"/>
 			<output pin="audio-mfcc"/>
 		</transformer>
