@@ -34,8 +34,6 @@ The following software components were integral to the project:
 
   - Mediapipe is employed for extracting data from a webcam, facilitating real-time analysis of user movements and gestures.
 
-    <img src="https://camo.githubusercontent.com/54e5f06106306c59e67acc44c61b2d3087cc0a6ee7004e702deb1b3eb396e571/68747470733a2f2f6d65646961706970652e6465762f696d616765732f6d6f62696c652f706f73655f747261636b696e675f66756c6c5f626f64795f6c616e646d61726b732e706e67" width="500" height="300" />
-
 - **openSMILE:**
   - OpenSmile is utilized for processing audio data, extracting features from the user's speech, contributing to the analysis of emotional content and vocal nuances.
 
